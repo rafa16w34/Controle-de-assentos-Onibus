@@ -137,7 +137,33 @@ def consultarAssentos():
 
 def consultarHorarios():
 
-    print(f'\nHorários de partida do ônibus: {linhas['Horário de partida']}')
+    horarios_cidade = []
+
+    print('\nCidades existentes:\n')
+
+    for i in range(len(linhas['Cidade de origem'])):
+
+        if linhas['Cidade de origem'][i] != linhas['Cidade de origem'][i-1]:
+
+            print(f'Cidade {i} | {linhas["Cidade de origem"][i]} |\n')
+
+    try:
+
+        cidade_escolhida = int(input('\nDigite o número da cidade:\n-> '))
+        cidade_escolhida = linhas['Cidade de origem'][cidade_escolhida]
+            
+    except(ValueError):
+        print('\nErro: Digite um número inteiro!\n')
+
+
+    for i in range(len(linhas['Cidade de origem'])):
+
+        if linhas['Cidade de origem'][i] == cidade_escolhida:
+
+            horarios_cidade.append(linhas['Horário de partida'][i])
+
+
+    print(f'\nHorários de partida do ônibus: {horarios_cidade}')
 
     
 
