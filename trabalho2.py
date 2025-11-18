@@ -6,74 +6,141 @@ data_atual = dt.datetime.now()
 hora_atual = data_atual.hour
 minuto_atual = data_atual.minute
 
-linhas = {'Cidade de origem':'','Cidade de destino':'','Horário de partida':'','Valor da passagem':0 }
+linhas = {'Cidade de origem':[],'Cidade de destino':[],'Horário de partida':[],'Valor da passagem':[], 'Ônibus': [] }#Dicionário da linha
 
-onibus = {'Data da partida': [], 'Assentos Disponíveis':[]}
-
-def gerar_onibus():
-
-    assentos = np.zeros((5, 4), dtype=int)
-    
-
-    return assentos
-
-
-def preencher_onibus(onibus):
-
-    print(onibus)
-
-    i = int(input(f"Digite qual assento você gostaria de ocupar: "))
-    j = int(input(f"Digite qual assento você gostaria de ocupar: "))
-
-    if(i< 5) and (j<4):
-
-        if onibus[i][j] != 1:
-
-            onibus[i][j] = 1
-
-        else:
-            print('\nErro: Esse assento já está ocupado.\n')
-    else:
-
-        print('\nErro: Esse assento não existe!\n')
+onibus = {'Data da partida': [], 'Assentos Disponíveis':[]}#Dicionário do ônibus
 
 
 
 
-def cadastroLinhas():
-    '''
-    Cada linha tem um conjunto de horários diários de partida de ônibus.
-     Os dados de cada linha são:
-    o Cidade de origem
-    o Cidade de destino
-    o Horário de partida (hora:minuto)
-    o Valor da passagem
-    '''
-    
-    linhas['Cidade de origem'] = str(input('\nDigite o nome da cidade de origem da linha:\n-> '))
-    linhas['Cidade de destino'] = str(input('\nDigite o nome da cidade de destino da linha:\n-> '))
-    linhas['Horário de partida'] = (f'{hora_atual}:{minuto_atual}')
+
+
+def cadastroLinhas():# Preenche a linha com os dados que o usuario fornece
+
+    linhas['Cidade de origem'].append(str(input('\nDigite o nome da cidade de origem da linha:\n-> ')))
+    linhas['Cidade de destino'].append(str(input('\nDigite o nome da cidade de destino da linha:\n-> ')))
+    linhas['Horário de partida'].append((f'{hora_atual}:{minuto_atual}'))
     
     try:
 
-        linhas['Valor da passagem'] = int(input('\nDigite o valor em reais da passagem:\n-> R$'))
+        linhas['Valor da passagem'].append(int(input('\nDigite o valor em reais da passagem:\n-> R$')))
 
     except(ValueError):
+
         print('\nErro: Digite um número inteiro!\n')
         pass
 
-    print(linhas)
+    linhas['Ônibus'].append((gerar_onibus()))
+    
+    
 
-def consultarHorarios():
-    pass
+
+
+
+
+
+
+
+
+
+def gerar_onibus():#Função que cria o ônibus
+
+    assentos = np.zeros((5, 4), dtype=int)
+    
+    return assentos
+
+
+
+
+
+
+
+
+
+def escolher_onibus():
+
+    print('\nÔnibus existentes:\n')
+
+    try:
+
+        for i in range(len(linhas['Ônibus'])):
+
+            print(f'Ônibus {i} | {linhas["Cidade de origem"]} - {linhas["Cidade de destino"]}|\n')
+
+        onibus_escolhido = int(input('\nDigite o número do ônibus:\n-> '))
+
+        return(onibus_escolhido)
+
+    except(ValueError):
+        print('\nErro: Digite um número inteiro!\n')
+
+
+
+
+def preencher_onibus():
+
+        onibus_escolhido = escolher_onibus()
+    
+        onibus = linhas['Ônibus'][onibus_escolhido]
+        
+        print(onibus)
+
+        i = int(input(f"Digite qual assento você gostaria de ocupar (x): "))
+        j = int(input(f"Digite qual assento você gostaria de ocupar (y): "))
+
+        if(i< 5) and (j<4):
+
+            if onibus[i][j] != 1:
+
+                onibus[i][j] = 1
+
+            else:
+                print('\nErro: Esse assento já está ocupado.\n')
+        else:
+
+            print('\nErro: Esse assento não existe!\n')
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def consultarAssentos():
-    '''
-o Consultar os assentos disponíveis no ônibus, informando a cidade de destino, horário e data. A data deve ser inferior a 30 dias, contados a partir da data atual.
-o Após uma consulta de assento disponível, o sistema deve perguntar se algum assento vai ser reservado (caso existam ainda assentos disponíveis).
-    '''
-    pass
+
+    onibus_escolhido = escolher_onibus()
+
+    assentos = linhas['Ônibus'][onibus_escolhido]
+
+    onibus['Assentos Disponíveis'] = [None]
+
+    for i, j in np.ndindex(assentos.shape):
+
+        if (assentos[i][j] == 0) and (assentos[i][j] != None):
+            onibus['Assentos Disponíveis'].append(f'[{i},{j}]')
+
+
+    return(onibus['Assentos Disponíveis'])
+
+
+
+
+def consultarHorarios():
+
+    print(f'\nHorários de partida do ônibus: {linhas['Horário de partida']}')
+
+    
+
 
 
 def gerarRelatorios():
@@ -90,14 +157,17 @@ o Uma reserva por linha.
     pass
 
 sair = 0 #Varíavel que controla o loop do while do menu
-assentos_onibus = gerar_onibus()
+
+onibus_criado = False #Variável usada por mim somente para testar as funções, uma outra implementação deve ser desenvolvida para o menu
 
 while sair == 0 :
 
     try:
-        print("\nSistema da Rodoviária:\n1 - Cadastrar ou editar linhas ")
+        print("\nSistema da Rodoviária:")
+        print("1 - Cadastrar ou editar linhas ")
         print("2 - Consultar horários disponíveis para uma cidade")
         print("3 - Consultar os assentos disponíveis no ônibus")
+        print('4 - Marcar um assento de um ônibus')
         print("0 - Sair")
 
         opcao = int(input("Opção: "))
@@ -107,27 +177,62 @@ while sair == 0 :
 
                 #Permite inserir, remover ou alterar alguma linha.
 
-                cadastroLinhas()
+                try:
+
+                    opcao_linhas = int(input('\nDigite uma das opções abaixo:\n1- Criar linha\n2- Remover linha\n3- Editar linha\n-> '))
+                    
+                    match(opcao_linhas):
+                        
+                        case 1:
+                            cadastroLinhas()
+
+                        case 2:
+                            print('\nEm breve..\n')
+
+                        case 3:
+                            print('\nEm breve..\n')
+
+                        case _:
+                            print('\nErro: Digite um dos valores exibidos no menu!\n')
+
+                except(ValueError):
+                    print('\nErro: Digite um número inteiro!\n')
+               
             
             case 2:
 
-                #Consultar horários disponíveis para uma cidade
+                if (linhas['Ônibus']):
 
-                print('\nEm breve..\n')
-            
-            case 3:
-            
-                #Consultar os assentos disponíveis no ônibus, informando a cidade de destino, horário e data.
-                #A data deve ser inferior a 30 dias, contados a partir da data atual.
-                #Após uma consulta de assento disponível, o sistema deve perguntar se algum assento vai ser reservado (caso existam ainda assentos disponíveis).
+                    #Consultar horários disponíveis para uma cidade
+                    consultarHorarios()
 
-                print('\nAssentos disponíveis no ônibus escolhido:\n')
+                else:
+                    print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
                 
-                print('\n0- Disponível\n1- Ocupado\n')
+            case 3:
 
-                preencher_onibus(assentos_onibus)
+                if (linhas['Ônibus']):
 
-                confirmacao = str(input('\nDigite qualquer tecla para retornar ao menu.\n'))
+                    lista_assentos = consultarAssentos()
+                    
+                    print('\nAssentos disponíveis:\n')
+
+                    for i in range(len(lista_assentos)):
+                        print(f'{lista_assentos[i]}\n')
+
+                else:
+                    print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
+                
+            case 4: #Marcar um assento
+                    
+                if (linhas['Ônibus']):
+
+                    preencher_onibus()
+
+                    confirmacao = str(input('\nDigite qualquer tecla para retornar ao menu.\n'))
+
+                else:
+                    print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
 
             case 0:
 
@@ -141,16 +246,3 @@ while sair == 0 :
         print("=====" * 10)
         print("\nErro: Opção inválida, digite um número inteiro!\n")
         print("=====" * 10)
-
-
-
-'''geração dos relatórios (na tela ou em arquivo texto, escolha do usuário): 
-o Total arrecadado com venda de passagens no mês corrente para cada linha. 
-o Ocupação percentual média de cada linha em cada dia da semana (uma matriz).
-
-
- Além de receber as reservas pelo teclado, permitir ler as reservas de um arquivo textono seguinte formato:
-o CIDADE, HORÁRIO(hh:mm), DATA(dd/mm/aaaa), ASSENTO
-o Uma reserva por linha.
- Gravar em um arquivo texto todas as reservas que não puderam ser realizadas, juntamente com o motivo 
-(ex.: ônibus cheio, ônibus já partiu, assento ocupado).'''
