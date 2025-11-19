@@ -261,7 +261,7 @@ def preencher_onibus():#Escolher qual será seu assento
             vendas.append({"Linha" : onibus_escolhido, "Data" : hoje, "Valor" : valor}) 
 
         #Registrando a viagem:
-            capacidade = onibus
+            capacidade = onibus.size
             embarcados = np.sum(onibus)
 
             viagem.append({"Linha:": onibus_escolhido, "Data": hoje, "Embarcados": int(embarcados), "Capacidade" : capacidade})
@@ -287,15 +287,15 @@ def consultarAssentos():
 
     assentos = linhas['Ônibus'][onibus_escolhido]
 
-    onibus['Assentos Disponíveis'] = [None]
+    onibus = []
 
-    for i, j in np.ndindex(assentos.shape):
+    for i in range(5):
+        for j in range(4):
+            status = "L" if assentos[i][j] == 0 else "X"
+            onibus.append(f"[{i},{j}] - {status}")
 
-        if (assentos[i][j] == 0) and (assentos[i][j] != None):
-            onibus['Assentos Disponíveis'].append(f'[{i},{j}]')
 
-
-    return(onibus['Assentos Disponíveis'])
+    return onibus
 
 ############################################################################################################################################
 
@@ -357,9 +357,7 @@ def total_arrecadado_linha(vendas):
         if ano == ano_atual and mes == mes_atual:
             linha = v["Linha"]
             # Soma o valor ao total da linha correspondente
-            totais[linha] = totais.get(linha, 0) + v["valor"] # totais.get(linha, 0) retorna 0 caso a linha ainda não exista no dicionário
-            
-
+            totais[linha] = totais.get(linha, 0) + v["Valor"] # totais.get(linha, 0) retorna 0 caso a linha ainda não exista no dicionário
     return totais
 
 #Calcular a ocupação percentual média de cada linha em cada dia da semana (matriz 7 dias)
@@ -369,12 +367,12 @@ def ocupacao_media():
     # Processa cada registro de viagem
     for v in viagem:
         # Converte string "YYYY-MM-DD" para data real do Python
-        data = dt.date.fromisoformat(v["data"])
+        data = dt.date.fromisoformat(v["Data"])
         # weekday() -> segunda=0, ..., domingo=6
         dia = data.weekday()  # segunda=0 ... domingo=6
-        linha = v["linha"]
+        linha = v["Linha"]
         # Calcula ocupação percentual da viagem
-        ocupacao = (v["embarcados"] / v["capacidade"]) * 100
+        ocupacao = (v["Embarcados"] / v["Capacidade"]) * 100
 
         # Se a linha ainda não existe, cria estrutura com 7 listas (uma para cada dia)
         if linha not in matriz:
@@ -404,7 +402,7 @@ def gerarRelatorios():
 
     print("\n1) Total arrecadado por linha no mês atual:")
     # Chama a função que calcula o total arrecadado
-    totais = total_arrecadado_linha()
+    totais = total_arrecadado_linha(vendas)
     for linha, valor in totais.items():
         print(f"Linha {linha}: R$ {valor:.2f}")
 
@@ -445,13 +443,13 @@ def ler_reservas_arquivo(nome):
 
                     # registrar venda
                     valor = linhas["Valor da passagem"][i]
-                    vendas.append({"linha": i, "data": data, "valor": valor})
+                    vendas.append({"Linha": i, "Data": data, "Valor": valor})
 
                     # registrar viagem
                     capacidade = 20
                     embarcados = np.sum(linhas["Ônibus"][i])
                     # Registra estatística de viagem
-                    viagem.append({"linha": i, "data": data, "embarcados": embarcados, "capacidade": capacidade})
+                    viagem.append({"Linha": i, "Data": data, "Embarcados": embarcados, "Capacidade": capacidade})
                     break
 
 
