@@ -403,35 +403,44 @@ def gerarRelatorios():
     print("\n===== RELATÓRIO =====")
 
     print("\n1) Total arrecadado por linha no mês atual:")
+    # Chama a função que calcula o total arrecadado
     totais = total_arrecadado_linha()
     for linha, valor in totais.items():
         print(f"Linha {linha}: R$ {valor:.2f}")
 
     print("\n2) Ocupação média (%) por dia da semana:")
+    # Chama a função que calcula ocupações
     matriz = ocupacao_media()
-    dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-
+    dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"] # Estética
+    # Imprime matriz por linha
     for linha, valores in matriz.items():
         print(f"\nLinha {linha}:")
         for d in range(7):
             print(f"  {dias[d]}: {valores[d]:.2f}%")
-
+'''
+ Função: Ler um arquivo de reservas e:
+ - marcar assentos no ônibus
+ - registrar vendas
+ - atualizar estatísticas de viagens
+'''
 def ler_reservas_arquivo(nome):
     with open(nome, "r", encoding="utf-8") as f:
         for linha in f:
             cidade, horario, data_str, assento = linha.strip().split(",")
-
+            # Remove espaços excedentes
             cidade = cidade.strip()
             horario = horario.strip()
+            # Converte data para objeto date
             data = dt.datetime.strptime(data_str.strip(), "%d/%m/%Y").date()
+            # Assento no formato "x-y"
             x, y = map(int, assento.strip().split("-"))
 
-            # Encontrar a linha correspondente
+            # Encontrar a linha correspondente, ou seja, procura a linha correspondente dentro do cadastro
             for i in range(len(linhas["Cidade de origem"])):
                 if (linhas["Cidade de origem"][i] == cidade
                    and linhas["Horário de partida"][i] == horario):
 
-                    # ocupar assento
+                    # Marca o assento como ocupado (1)
                     linhas["Ônibus"][i][x][y] = 1
 
                     # registrar venda
@@ -441,15 +450,9 @@ def ler_reservas_arquivo(nome):
                     # registrar viagem
                     capacidade = 20
                     embarcados = np.sum(linhas["Ônibus"][i])
-
-                    viagem.append({
-                        "linha": i,
-                        "data": data,
-                        "embarcados": embarcados,
-                        "capacidade": capacidade
-                    })
+                    # Registra estatística de viagem
+                    viagem.append({"linha": i, "data": data, "embarcados": embarcados, "capacidade": capacidade})
                     break
-
 
 
 #########################################################################################################################################################
