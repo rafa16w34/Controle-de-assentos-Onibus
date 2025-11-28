@@ -56,7 +56,7 @@ def cadastroLinhas():# Preenche a linha com os dados que o usuario fornece
 
     else:
 
-        print('\nErro: Digite uma data no formato correto!\n')
+        print('\nErro: Digite uma hora no formato correto!\n')
         pass
     
 #####################################################################################################################################################
@@ -272,6 +272,7 @@ def preencher_onibus():#Escolher qual será seu assento
     else:
 
         print('\nErro: Esse assento não existe!\n')
+        pass
 
     print(f'\nO valor será de : R$ {linhas["Valor da passagem"][onibus_escolhido]:.2f}\n')
 
