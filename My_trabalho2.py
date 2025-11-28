@@ -264,7 +264,7 @@ def preencher_onibus():#Escolher qual será seu assento
             capacidade = onibus.size
             embarcados = np.sum(onibus)
 
-            viagem.append({"Linha:": onibus_escolhido, "Data": hoje, "Embarcados": int(embarcados), "Capacidade" : capacidade})
+            viagem.append({"Linha": onibus_escolhido, "Data": hoje, "Embarcados": int(embarcados), "Capacidade" : capacidade})
 
         else:
             print('\nErro: Esse assento já está ocupado.\n')
@@ -525,6 +525,7 @@ while sair == 0 :
 
                 else:
                     print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
+                    
                 
             case 4: #Marcar um assento
                     
