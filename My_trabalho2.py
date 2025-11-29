@@ -9,10 +9,14 @@ viagens = [] # lista de dicts: {'linha_idx':int, 'data': date, 'embarcados':int,
 falhas_arquivo = Path("reservas_falhas.txt")
 
 # utilitários
-def hoje():
+def hoje(): # Retorna a data atual do sistema.
     return dt.date.today()
 
 def parse_hora(texto):
+    """
+    Recebe uma string no formato 'hh:mm' e valida.
+    Retorna a string formatada corretamente ou None se inválida.
+    """
     try:
         h, m = texto.strip().split(":")
         h, m = int(h), int(m)
@@ -23,25 +27,32 @@ def parse_hora(texto):
     return None
 
 def parse_data_ddmmaaaa(texto):
+    """
+    Converte 'dd/mm/aaaa' para objeto datetime.date.
+    Retorna None se a data for inválida.
+    """
     try:
         d = dt.datetime.strptime(texto.strip(), "%d/%m/%Y").date()
         return d
     except Exception:
         return None
 
-def within_30_days(date_obj):
+def verificar_dias(date_obj): # Verifica se a data está entre hoje e 30 dias após hoje.
     delta = (date_obj - hoje()).days
     return 0 <= delta <= 30
 
-def bus_exists_for_line_on_date(linha_idx, date_obj):
+#--------------------------Criação e controle de Ônibus---------------------------------------
+
+def verificar_onibus_linha_data(linha_idx, date_obj): # Retorna True se já houver um ônibus registrado para a linha naquela data.
     key = date_obj.isoformat()
     return key in linhas[linha_idx]['onibus']
 
-def create_bus_for_line_date(linha_idx, date_obj):
+def criar_onibus_porlinha_data(linha_idx, date_obj): # Cria (se necessário) e retorna o vetor de 20 assentos (0 = livre, 1 = ocupado) para a linha e data informadas.
     key = date_obj.isoformat()
+    # Se ainda não existe um ônibus nesta data, cria
     if key not in linhas[linha_idx]['onibus']:
         linhas[linha_idx]['onibus'][key] = [0] * 20  # 20 assentos, 0 livre, 1 ocupado
-    return linhas[linha_idx]['onibus'][key]
+    return linhas[linha_idx]['onibus'][key] # Retorna o vetor de assentos da data
 
 def imprimir_mapa_assentos(assentos):
     # exibe assentos 1..20, marcando L ou X, e indicando janelas (ímpares)
@@ -51,12 +62,18 @@ def imprimir_mapa_assentos(assentos):
         num = i + 1
         janela = "(J)" if num % 2 == 1 else "   "
         linha_formatada += f"{num:02d}:{status}{janela}  "
-        if (i + 1) % 5 == 0:
+        if (i + 1) % 5 == 0: # Quebra de linha a cada 5 assentos para ficar organizado
             linha_formatada += "\n"
     print(linha_formatada)
 
-# CRUD linhas
+#--------------------------Criação Linhas--------------------------------------- 
 def cadastroLinhas():
+    """
+    Cadastra uma nova linha de ônibus.
+    O usuário informa origem, destino, horários e valor.
+    A nova linha é adicionada na lista global 'linhas'.
+    """
+
     origem = input("Cidade de origem: ").strip()
     destino = input("Cidade de destino: ").strip()
     horarios_texto = input("Horários de partida (separe por vírgula, ex: 07:30,13:00): ").strip()
@@ -75,13 +92,8 @@ def cadastroLinhas():
     except Exception:
         print("Valor inválido.")
         return
-    linha = {
-        'origem': origem,
-        'destino': destino,
-        'horarios': horarios,
-        'valor': float(valor),
-        'onibus': {}  # mapeia data iso -> lista de 20 assentos
-    }
+    # Cria linha
+    linha = {'origem': origem, 'destino': destino, 'horarios': horarios, 'valor': float(valor),'onibus': {}} # 'onibus': {}  mapeia data iso -> lista de 20 assentos
     linhas.append(linha)
     print("Linha cadastrada com sucesso.")
 
@@ -151,13 +163,19 @@ def del_linhas():
     else:
         print("Operação cancelada.")
 
+#--------------------------Localizar Viagem--------------------------------------- 
+
 def encontrar_viagem(linha_idx, data, horario):
+    """
+    Procura dentro da lista global 'viagens' uma viagem com:
+    - linha correspondente
+    - data correspondente
+    - horário correspondente
+    Se achar, retorna o dicionário da viagem.
+    Caso contrário, retorna None.
+    """
     for v in viagens:
-        if (
-            v["linha_idx"] == linha_idx and
-            v["data"] == data and
-            v["horario"] == horario
-        ):
+        if (v["linha_idx"] == linha_idx and v["data"] == data and v["horario"] == horario):
             return v
     return None
 
@@ -187,7 +205,7 @@ def escolher_linha_por_dest_horario_data():
     if not data_obj:
         print("Data inválida.")
         return None, None, None
-    if not within_30_days(data_obj):
+    if not verificar_dias(data_obj):
         print("A data deve ser dentro dos próximos 30 dias a partir de hoje.")
         return None, None, None
     # procurar linhas que tenham esse destino e horário
@@ -227,7 +245,7 @@ def consultarAssentos():
         print("Ônibus já partiu. Não é possível vender passagem para essa partida.")
         return
 
-    assentos = create_bus_for_line_date(linha_idx, data_obj)
+    assentos = criar_onibus_porlinha_data(linha_idx, data_obj)
     print("\nMapa de assentos (L = Livre, X = Ocupado) [ímpares = janela]:\n")
     imprimir_mapa_assentos(assentos)
 
@@ -240,7 +258,15 @@ def consultarAssentos():
         print("Ônibus lotado.")
 
 def marcar_assento_em_onibus(linha_idx, data_obj, horario_str=None):
-    # Se horario_str não for fornecido, pedir
+    """
+    Realiza a reserva de um assento em um ônibus:
+    - valida horário, data e se a partida já ocorreu
+    - verifica se assento está livre
+    - marca no mapa de assentos
+    - registra venda
+    - cria/atualiza viagem (sem duplicar viagens)
+    """
+    # # Se o horário não foi passado como argumento, pedir ao usuário
     if horario_str is None:
         entrada = input("Digite o horário (hh:mm) da viagem: ").strip()
         horario_str = parse_hora(entrada)
@@ -253,7 +279,7 @@ def marcar_assento_em_onibus(linha_idx, data_obj, horario_str=None):
     minuto = int(horario_str[3:])
 
     # Criar/obter assentos do ônibus
-    assentos = create_bus_for_line_date(linha_idx, data_obj)
+    assentos = criar_onibus_porlinha_data(linha_idx, data_obj)
 
     # Número do assento
     try:
@@ -290,7 +316,6 @@ def marcar_assento_em_onibus(linha_idx, data_obj, horario_str=None):
         'valor': valor
     })
 
-    # ➤ CORREÇÃO: evitar duplicação de viagens
     viagem = encontrar_viagem(linha_idx, data_obj, horario_str)
 
     if viagem is None:
@@ -325,10 +350,10 @@ def criar_outro_onibus():
     if not data_obj:
         print("Data inválida.")
         return
-    if not within_30_days(data_obj):
+    if not verificar_dias(data_obj):
         print("A data deve estar dentro dos próximos 30 dias.")
         return
-    create_bus_for_line_date(idx, data_obj)
+    criar_onibus_porlinha_data(idx, data_obj)
     print("Ônibus criado para a data informada.")
 
 # Relatórios
@@ -430,7 +455,7 @@ def ler_reservas_arquivo(nome):
             if not hora or not data_obj:
                 falhas.append((linha_original, "Data ou horário inválido"))
                 continue
-            if not within_30_days(data_obj):
+            if not verificar_dias(data_obj):
                 falhas.append((linha_original, "Data fora do período de 30 dias"))
                 continue
             # encontrar linha que tenha destino igual à cidade e esse horário (assumimos que 'CIDADE' no arquivo é destino)
@@ -457,7 +482,7 @@ def ler_reservas_arquivo(nome):
                 falhas.append((linha_original, "Assento fora do intervalo 1-20"))
                 continue
             # criar ônibus se necessário e tentar reservar
-            assentos = create_bus_for_line_date(linha_encontrada, data_obj)
+            assentos = criar_onibus_porlinha_data(linha_encontrada, data_obj)
             idx = num_assento - 1
             if assentos[idx] == 1:
                 falhas.append((linha_original, "Assento ocupado"))
@@ -484,15 +509,7 @@ sair = 0 #Varíavel que controla o loop do while do menu
 while sair == 0 :
 
     try:
-        print("\nSistema da Rodoviária:")
-        print("1 - Cadastrar ou editar linhas;")
-        print("2 - Consultar horários por cidade de origem")
-        print("3 - Consultar assentos (destino, horário, data)")
-        print("4 - Marcar assento (direto)")
-        print("5 - Criar outro ônibus para uma linha em data")
-        print("6 - Ler reservas de arquivo")
-        print("7 - Gerar relatório")
-        print("0 - Sair")
+        print("\nSistema da Rodoviária:\n1 - Cadastrar ou editar linhas;\n2 - Consultar horários por cidade de origem;\n3 - Consultar assentos (destino, horário, data);\n4 - Marcar assento (direto);\n5 - Criar outro ônibus para uma linha em data\n6 - Ler reservas de arquivo\n7 - Gerar relatório\n0 - Sair")
 
         opcao = int(input("Opção: "))
 
@@ -555,7 +572,7 @@ while sair == 0 :
 
                 data_str = input("Data da partida (dd/mm/aaaa): ").strip()
                 data_obj = parse_data_ddmmaaaa(data_str)
-                if not data_obj or not within_30_days(data_obj):
+                if not data_obj or not verificar_dias(data_obj):
                     print("Data inválida ou fora do período de 30 dias.")
                     continue
 
