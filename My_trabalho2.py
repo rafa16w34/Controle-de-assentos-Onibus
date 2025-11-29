@@ -1,460 +1,481 @@
-import numpy as np
 import datetime as dt
 from pathlib import Path
 
-data_atual = dt.datetime.now()
+# Dados principais
+linhas = []  # cada item: {'origem':str, 'destino':str, 'horarios':[hh:mm,...], 'valor':float, 'onibus': { 'YYYY-MM-DD': [0/1 x20] } }
 
-linhas = {'Cidade de origem':[],'Cidade de destino':[],'Horário de partida':[],'Valor da passagem':[], 'Ônibus': [] }#Dicionário da linha
+vendas = []  # lista de dicts: {'linha_idx':int, 'data': date, 'valor': float}
+viagens = [] # lista de dicts: {'linha_idx':int, 'data': date, 'embarcados':int, 'capacidade':20}
+falhas_arquivo = Path("reservas_falhas.txt")
 
-onibus = {'Data da partida': [], 'Assentos Disponíveis':[]}#Dicionário do ônibus
+# utilitários
+def hoje():
+    return dt.date.today()
 
-viagem = []
-vendas = [] 
-
-#############################################################################################################################################################
-
-#Funções:
-
-#Criar uma linha com as informações fornecidadas:
-
-def cadastroLinhas():# Preenche a linha com os dados que o usuario fornece
-
-    cidade_origem_digitada = str(input('\nDigite o nome da cidade de origem da linha:\n-> '))
-
-    cidade_destino_digitada = str(input('\nDigite o nome da cidade de destino da linha:\n-> '))
-
-    hora_digitada = str(input('\nDigite a hora que ele irá sair: \nFormato: ( 00:00 )\n-> '))
-
-    if (hora_digitada.find(':') == 2):
-
-        hora_digitada = hora_digitada.split(':')
-
-        hora_atual = int(hora_digitada[0])
-        minuto_atual = int(hora_digitada[1])
-
-        if (hora_atual < 24) and (hora_atual >= 0) and (minuto_atual < 59) and (minuto_atual >= 0):
-
-            linhas['Cidade de origem'].append(cidade_origem_digitada)
-            linhas['Cidade de destino'].append(cidade_destino_digitada)
-
-            linhas['Horário de partida'].append((f'{hora_atual}:{minuto_atual}'))
-            
-            try:
-
-                linhas['Valor da passagem'].append(int(input('\nDigite o valor em reais da passagem:\n-> R$')))
-
-            except(ValueError):
-
-                print('\nErro: Digite um número inteiro!\n')
-                pass
-
-            linhas['Ônibus'].append((gerar_onibus()))
-
-        else:
-
-            pass
-
-    else:
-
-        print('\nErro: Digite uma hora no formato correto!\n')
+def parse_hora(texto):
+    try:
+        h, m = texto.strip().split(":")
+        h, m = int(h), int(m)
+        if 0 <= h <= 23 and 0 <= m <= 59:
+            return f"{h:02d}:{m:02d}"
+    except Exception:
         pass
-    
-#####################################################################################################################################################
-# Editar linhas:
+    return None
+
+def parse_data_ddmmaaaa(texto):
+    try:
+        d = dt.datetime.strptime(texto.strip(), "%d/%m/%Y").date()
+        return d
+    except Exception:
+        return None
+
+def within_30_days(date_obj):
+    delta = (date_obj - hoje()).days
+    return 0 <= delta <= 30
+
+def bus_exists_for_line_on_date(linha_idx, date_obj):
+    key = date_obj.isoformat()
+    return key in linhas[linha_idx]['onibus']
+
+def create_bus_for_line_date(linha_idx, date_obj):
+    key = date_obj.isoformat()
+    if key not in linhas[linha_idx]['onibus']:
+        linhas[linha_idx]['onibus'][key] = [0] * 20  # 20 assentos, 0 livre, 1 ocupado
+    return linhas[linha_idx]['onibus'][key]
+
+def imprimir_mapa_assentos(assentos):
+    # exibe assentos 1..20, marcando L ou X, e indicando janelas (ímpares)
+    linha_formatada = ""
+    for i in range(20):
+        status = "L" if assentos[i] == 0 else "X"
+        num = i + 1
+        janela = "(J)" if num % 2 == 1 else "   "
+        linha_formatada += f"{num:02d}:{status}{janela}  "
+        if (i + 1) % 5 == 0:
+            linha_formatada += "\n"
+    print(linha_formatada)
+
+# CRUD linhas
+def cadastroLinhas():
+    origem = input("Cidade de origem: ").strip()
+    destino = input("Cidade de destino: ").strip()
+    horarios_texto = input("Horários de partida (separe por vírgula, ex: 07:30,13:00): ").strip()
+    horarios = []
+    for h in horarios_texto.split(","):
+        hh = parse_hora(h)
+        if hh:
+            horarios.append(hh)
+        else:
+            print(f"Atenção: horário inválido ignorado -> {h.strip()}")
+    if not horarios:
+        print("É necessário informar pelo menos um horário válido.")
+        return
+    try:
+        valor = float(input("Valor da passagem (R$): ").strip())
+    except Exception:
+        print("Valor inválido.")
+        return
+    linha = {
+        'origem': origem,
+        'destino': destino,
+        'horarios': horarios,
+        'valor': float(valor),
+        'onibus': {}  # mapeia data iso -> lista de 20 assentos
+    }
+    linhas.append(linha)
+    print("Linha cadastrada com sucesso.")
+
+def listar_linhas_com_indices():
+    if not linhas:
+        print("Nenhuma linha cadastrada.")
+        return
+    for i, l in enumerate(linhas):
+        print(f"{i} - {l['origem']} -> {l['destino']} | Horários: {', '.join(l['horarios'])} | R$ {l['valor']:.2f}")
 
 def edit_linhas():
-    # Verifica se existe linha cadastrada
-    if len(linhas['Cidade de origem']) == 0:
-        print("\nNenhuma linha encontrada!")
+    if not linhas:
+        print("Nenhuma linha cadastrada.")
         return
-
-    print("\nLinhas Cadastradas:\n")
-    for i in range(len(linhas['Cidade de origem'])):
-        print(f"{i} - {linhas['Cidade de origem'][i]}|{linhas['Cidade de destino'][i]}|Partida:{linhas['Horário de partida'][i]}|Valor: R${linhas['Valor da passagem'][i]}")
-    
+    listar_linhas_com_indices()
     try:
-        idx = int(input("\nDigite o número da linha que deseja editar:\n-> "))
-    except ValueError: 
-        print("\nErro: Digite um número inteiro!\n")
+        idx = int(input("Escolha o índice da linha a editar: "))
+    except Exception:
+        print("Índice inválido.")
         return
-    
-    if idx < 0 or idx >= len(linhas['Cidade de origem']):
-        print("\nErro: Linha inexistente!\n")
+    if idx < 0 or idx >= len(linhas):
+        print("Índice fora do intervalo.")
         return
-    # Pergunta novos valores (Enter mantém o mesmo)
-    print("\nQual campo deseja DELETAR?\n")
-    print("1 - Cidade de origem;\n2 - Cidade de destino;\n3 - Horário de partida;\n4 - Valor da passagem;\n5 - Ônibus (remove apenas 1 ônibus)\n")
-
-    cidade_origem_edit = input(f"Nova cidade de origem (atual: {linhas['Cidade de origem'][idx]}): ")
-    cidade_destino_edit = input(f"Nova cidade de destino (atual: {linhas['Cidade de destino'][idx]}): ")
-
-    horario_edit = input(f"Novo horário (atual: {linhas['Horário de partida'][idx]}) [00:00]: ")
-
-    valor_edit = input(f"Novo valor da passagem (atual: R$ {linhas['Valor da passagem'][idx]}): ")
-
-    if cidade_origem_edit.strip():
-        linhas['Cidade de origem'][idx] = cidade_origem_edit
-    if cidade_destino_edit.strip():
-        linhas['Cidade de destino'][idx] = cidade_destino_edit
-    if horario_edit.strip():
-        if ":" in horario_edit:
-            hora, minuto = horario_edit.split(':')
-            if hora.isdigit() and minuto.isdigit() and 0 < int(hora) < 24 and 0 < int(minuto) < 60:
-                linhas['Horário de partida'][idx] = horario_edit
+    l = linhas[idx]
+    novo_origem = input(f"Origem (enter mantém '{l['origem']}'): ").strip()
+    novo_destino = input(f"Destino (enter mantém '{l['destino']}'): ").strip()
+    novos_hor = input(f"Horários (enter mantém '{', '.join(l['horarios'])}'). Para mudar, forneça separados por vírgula: ").strip()
+    novo_valor = input(f"Valor (enter mantém R$ {l['valor']:.2f}): ").strip()
+    if novo_origem:
+        l['origem'] = novo_origem
+    if novo_destino:
+        l['destino'] = novo_destino
+    if novos_hor:
+        horarios_n = []
+        for h in novos_hor.split(","):
+            hh = parse_hora(h)
+            if hh:
+                horarios_n.append(hh)
             else:
-                    print("\nHorário inválido. Mantido o original.\n")
-        else:
-            print("\nFormato inválido. Mantido o original.\n")
-    if valor_edit.strip():
+                print(f"Horário inválido ignorado -> {h.strip()}")
+        if horarios_n:
+            l['horarios'] = horarios_n
+    if novo_valor:
         try:
-            linhas['Valor da passagem'][idx] = int(valor_edit)
-        except ValueError:
-            print("\nValor inválido. Mantido o original.\n")
-    
-    print("\nLinha atualizada com sucesso!\n")
+            l['valor'] = float(novo_valor)
+        except Exception:
+            print("Valor inválido, mantido o anterior.")
+    print("Linha atualizada.")
 
 def del_linhas():
-    # Verifica se existe linha cadastrada
-    if len(linhas['Cidade de origem']) == 0:
-        print("\nNenhuma linha encontrada!")
+    if not linhas:
+        print("Nenhuma linha cadastrada.")
         return
-
-    print("\nLinhas Cadastradas:\n")
-    for i in range(len(linhas['Cidade de origem'])):
-        print(f"{i} - {linhas['Cidade de origem'][i]}|{linhas['Cidade de destino'][i]}|Partida:{linhas['Horário de partida'][i]}|Valor: R${linhas['Valor da passagem'][i]}")
-    
+    listar_linhas_com_indices()
     try:
-        idx2 = int(input("\nDigite o número da linha que deseja editar:\n-> "))
-    except ValueError: 
-        print("\nErro: Digite um número inteiro!\n")
+        idx = int(input("Escolha o índice da linha a remover: "))
+    except Exception:
+        print("Índice inválido.")
         return
-    
-    if idx2 < 0 or idx2 >= len(linhas['Cidade de origem']):
-        print("\nErro: Linha inexistente!\n")
+    if idx < 0 or idx >= len(linhas):
+        print("Índice fora do intervalo.")
         return
-    # Pergunta valores a serem deletados (Enter mantém o mesmo)
-    print("\nQual campo deseja DELETAR?\n")
-    print("1 - Cidade de origem;\n2 - Cidade de destino;\n3 - Horário de partida;\n4 - Valor da passagem;\n5 - Ônibus (remove apenas 1 ônibus)\n")
-
-    try:
-        opc = int(input("Opção: "))
-        # Deletar campo escolhido
-        match opc:
-            case 1:
-                linhas['Cidade de origem'][idx2] = None
-            case 2:
-                linhas['Cidade de destino'][idx2] = None
-            case 3:
-                linhas['Horário de partida'][idx2] = None
-            case 4:
-                linhas['Valor da passagem'][idx2] = None
-            case 5:
-                linhas['Ônibus'][idx2] = None
-            case _:
-                print("\nErro: Opção inválida!\n")
-                return
-    except ValueError:
-        print("\nErro: Digite um número inteiro!\n")
-        return
-
-    print("\nCampo deletado com sucesso!\n")
-    
-#####################################################################################################################################################
-
-#Gera um ônibus vazio:
-
-def gerar_onibus():#Função que cria o ônibus
-
-    assentos = np.zeros((5, 4), dtype=int)
-    
-    return assentos
-
-###################################################################################################################################################
-
-#Criar outro ônibus para uma linha já existente:
-
-
-def DuplicarLinhas(linha_escolhida):#Duplica as informações da linha da qual se quer duplicar o onibus, mantendo as informações mas criando mais um ônibus vazio
-
-    linhas['Cidade de origem'].append(linhas['Cidade de origem'][linha_escolhida])
-    linhas['Cidade de destino'].append(linhas['Cidade de destino'][linha_escolhida])
-    linhas['Horário de partida'].append(linhas['Horário de partida'][linha_escolhida])
-    
-    try:
-
-        linhas['Valor da passagem'].append(linhas['Valor da passagem'][linha_escolhida])
-
-    except(ValueError):
-
-        print('\nErro: Digite um número inteiro!\n')
-        pass
-
-    linhas['Ônibus'].append((gerar_onibus()))
-
-
-
-def criar_outro_onibus():#Função que cria mais um ônibus para linha
-
-    
-    print('\nEscolha entre as linhas existentes aquela que você gostaria de adicionar um ônibus:\n')
-
-    try:
-
-        for i in range(len(linhas['Cidade de origem'])):
-
-            print(f'Linha {i} | {linhas["Cidade de origem"][i]} - {linhas["Cidade de destino"][i]}|\n')
-
-        linha_escolhida = int(input('\nDigite o número da linha :\n-> '))
-
-    except(ValueError):
-        print('\nErro: Digite um número inteiro!\n')
-        pass
-
-    DuplicarLinhas(linha_escolhida)
-
-    return 
-
-###########################################################################################################################################################
-
-#Marcar um assento:
-
-
-def escolher_onibus():#Escolher um do ônibus para fazer a viagem
-
-    print('\nÔnibus existentes:\n')
-
-    try:
-
-        for i in range(len(linhas['Ônibus'])):
-
-            print(f'Ônibus {i} | {linhas["Cidade de origem"][i]} - {linhas["Cidade de destino"][i]}|\n')
-
-        onibus_escolhido = int(input('\nDigite o número do ônibus:\n-> '))
-
-        return(onibus_escolhido)
-
-    except(ValueError):
-        print('\nErro: Digite um número inteiro!\n')
-
-
-
-
-def preencher_onibus():#Escolher qual será seu assento
-
-    onibus_escolhido = escolher_onibus()
-
-    onibus = linhas['Ônibus'][onibus_escolhido]
-    
-    print(onibus)
-
-    i = int(input(f"Digite qual assento você gostaria de ocupar (x): "))
-    j = int(input(f"Digite qual assento você gostaria de ocupar (y): "))
-
-    if(i< 5) and (j<4):
-
-        if onibus[i][j] != 1:
-
-            onibus[i][j] = 1
-        # Registrando a venda:
-            valor = linhas['Valor da passagem'][onibus_escolhido]
-            hoje = dt.date.today().isoformat()
-            vendas.append({"Linha" : onibus_escolhido, "Data" : hoje, "Valor" : valor}) 
-
-        #Registrando a viagem:
-            capacidade = onibus.size
-            embarcados = np.sum(onibus)
-
-            viagem.append({"Linha": onibus_escolhido, "Data": hoje, "Embarcados": int(embarcados), "Capacidade" : capacidade})
-
-        else:
-            print('\nErro: Esse assento já está ocupado.\n')
-
+    conf = input("Digite 'S' para confirmar exclusão: ").strip().upper()
+    if conf == 'S':
+        linhas.pop(idx)
+        print("Linha removida.")
     else:
+        print("Operação cancelada.")
 
-        print('\nErro: Esse assento não existe!\n')
-        pass
-
-    print(f'\nO valor será de : R$ {linhas["Valor da passagem"][onibus_escolhido]:.2f}\n')
-
-    print('\nCompra realizada com sucesso!\n')
-
-#####################################################################################################################################
-
-#Consulta os assentos do Ônibus
-  
-def consultarAssentos():
-
-    onibus_escolhido = escolher_onibus()
-
-    assentos = linhas['Ônibus'][onibus_escolhido]
-
-    onibus = []
-
-    for i in range(5):
-        for j in range(4):
-            status = "L" if assentos[i][j] == 0 else "X"
-            onibus.append(f"[{i},{j}] - {status}")
+def encontrar_viagem(linha_idx, data, horario):
+    for v in viagens:
+        if (
+            v["linha_idx"] == linha_idx and
+            v["data"] == data and
+            v["horario"] == horario
+        ):
+            return v
+    return None
 
 
-    return onibus
-
-############################################################################################################################################
-
-#Consulta os horários disponíveis em uma cidade
-
+# Consultas
 def consultarHorarios():
+    cidade = input("Digite a cidade de origem para ver horários: ").strip()
+    encontrados = []
+    for i, l in enumerate(linhas):
+        if l['origem'].lower() == cidade.lower():
+            encontrados.append((i, l))
+    if not encontrados:
+        print("Nenhuma linha encontrada para essa cidade de origem.")
+        return
+    for idx, l in encontrados:
+        print(f"Linha {idx}: {l['origem']} -> {l['destino']} | Horários: {', '.join(l['horarios'])} | R$ {l['valor']:.2f}")
 
-    horarios_cidade = []
-    cidade_exibida = []
+def escolher_linha_por_dest_horario_data():
+    destino = input("Digite a cidade de destino: ").strip()
+    horario = input("Digite o horário (hh:mm): ").strip()
+    horario = parse_hora(horario)
+    if not horario:
+        print("Horário inválido.")
+        return None, None, None
+    data_str = input("Digite a data da partida (dd/mm/aaaa): ").strip()
+    data_obj = parse_data_ddmmaaaa(data_str)
+    if not data_obj:
+        print("Data inválida.")
+        return None, None, None
+    if not within_30_days(data_obj):
+        print("A data deve ser dentro dos próximos 30 dias a partir de hoje.")
+        return None, None, None
+    # procurar linhas que tenham esse destino e horário
+    candidatos = []
+    for i, l in enumerate(linhas):
+        if (l['destino'].lower() == destino.lower()) and (horario in l['horarios']):
+            candidatos.append((i, l))
+    if not candidatos:
+        print("Nenhuma linha encontrada com esse destino e horário.")
+        return None, None, None
+    # se mais de uma linha, listar e pedir escolha
+    if len(candidatos) > 1:
+        print("Foram encontradas várias linhas. Escolha o índice:")
+        for idx, l in candidatos:
+            print(f"{idx} - {l['origem']} -> {l['destino']} | Valor R$ {l['valor']:.2f}")
+        try:
+            escolha = int(input("Digite o índice da linha desejada: "))
+        except Exception:
+            print("Índice inválido.")
+            return None, None, None
+        if not any(escolha == idx for idx, _ in candidatos):
+            print("Escolha inválida.")
+            return None, None, None
+        linha_idx = escolha
+    else:
+        linha_idx = candidatos[0][0]
+    return linha_idx, horario, data_obj
 
-    print('\nCidades existentes:\n')
+def consultarAssentos():
+    linha_idx, horario, data_obj = escolher_linha_por_dest_horario_data()
+    if linha_idx is None:
+        return
+    # verificar se ônibus já partiu (se data == hoje e horário < agora)
+    now = dt.datetime.now()
+    partida_datetime = dt.datetime.combine(data_obj, dt.time(int(horario[:2]), int(horario[3:])))
+    if partida_datetime < now:
+        print("Ônibus já partiu. Não é possível vender passagem para essa partida.")
+        return
 
-    for i in range(len(linhas['Cidade de origem'])):
+    assentos = create_bus_for_line_date(linha_idx, data_obj)
+    print("\nMapa de assentos (L = Livre, X = Ocupado) [ímpares = janela]:\n")
+    imprimir_mapa_assentos(assentos)
 
-        if (len(linhas['Cidade de origem'])) > 1:
+    # perguntar se deseja reservar
+    if sum(assentos) < len(assentos):
+        resp = input("Deseja reservar algum assento agora? (S/N): ").strip().upper()
+        if resp == 'S':
+            marcar_assento_em_onibus(linha_idx, data_obj, horario)
+    else:
+        print("Ônibus lotado.")
 
-            if ((linhas['Cidade de origem'][i]) not in cidade_exibida):
+def marcar_assento_em_onibus(linha_idx, data_obj, horario_str=None):
+    # Se horario_str não for fornecido, pedir
+    if horario_str is None:
+        entrada = input("Digite o horário (hh:mm) da viagem: ").strip()
+        horario_str = parse_hora(entrada)
+        if not horario_str:
+            print("Horário inválido.")
+            return
 
-                print(f'Cidade {i} | {linhas["Cidade de origem"][i]} |\n')  #Ele pode digitar um número i de uma das cidades repetidas
-                
-                cidade_exibida.append(linhas['Cidade de origem'][i])        #Posso usar essa lista para contornar esse erro
+    # Parse de horas e minutos
+    hora = int(horario_str[:2])
+    minuto = int(horario_str[3:])
 
-        else:
+    # Criar/obter assentos do ônibus
+    assentos = create_bus_for_line_date(linha_idx, data_obj)
 
-            print(f'Cidade {i} | {linhas["Cidade de origem"][i]} |\n')
-
+    # Número do assento
     try:
+        num = int(input("Digite o número do assento desejado (1-20): "))
+    except:
+        print("Número inválido.")
+        return
 
-        cidade_escolhida = int(input('\nDigite o número da cidade:\n-> '))
-        cidade_escolhida = linhas['Cidade de origem'][cidade_escolhida]
-            
-    except(ValueError):
-        print('\nErro: Digite um número inteiro!\n')
-        pass
+    if not (1 <= num <= 20):
+        print("Assento inválido.")
+        return
 
+    idx = num - 1
 
-    for i in range(len(linhas['Cidade de origem'])):
+    # Verificar se a viagem já partiu
+    partida_datetime = dt.datetime.combine(data_obj, dt.time(hora, minuto))
+    if partida_datetime < dt.datetime.now():
+        print("Não é possível reservar: ônibus já partiu.")
+        return
 
-        if linhas['Cidade de origem'][i] == cidade_escolhida:
+    # Verificar se assento está ocupado
+    if assentos[idx] == 1:
+        print("Assento já ocupado.")
+        return
 
-            horarios_cidade.append(linhas['Horário de partida'][i])
+    # Marca assento
+    assentos[idx] = 1
 
+    # Registrar venda simples
+    valor = linhas[linha_idx]['valor']
+    vendas.append({
+        'linha_idx': linha_idx,
+        'data': data_obj,
+        'valor': valor
+    })
 
-    print(f'\nHorários de partida do ônibus: {horarios_cidade}')
+    # ➤ CORREÇÃO: evitar duplicação de viagens
+    viagem = encontrar_viagem(linha_idx, data_obj, horario_str)
 
-#####################################################################################################################################################
-# Total arrecadado por linha
-def total_arrecadado_linha(vendas):
-    # Obtém mês e ano atuais para filtrar apenas os registros do mês corrente
-    mes_atual = dt.date.today().month
-    ano_atual = dt.date.today().year
+    if viagem is None:
+        viagem = {
+            "linha_idx": linha_idx,
+            "data": data_obj,
+            "horario": horario_str,
+            "vendidos": 0,
+            "valor_unitario": valor
+        }
+        viagens.append(viagem)
 
-    totais = {} # dicionário onde chave = linha e valor = total em dinheiro
-    # Percorre todas as vendas registradas
+    # Atualiza ocupação real
+    viagem["vendidos"] += 1
+
+    print(f"Reserva realizada: Linha {linha_idx}, Data {data_obj.strftime('%d/%m/%Y')}, "
+          f"Horário {horario_str}, Assento {num} | Valor R$ {valor:.2f}")
+
+# função para criar ônibus manualmente (opção 5)
+def criar_outro_onibus():
+    listar_linhas_com_indices()
+    try:
+        idx = int(input("Escolha o índice da linha para criar ônibus em uma data: "))
+    except Exception:
+        print("Índice inválido.")
+        return
+    if idx < 0 or idx >= len(linhas):
+        print("Índice fora do intervalo.")
+        return
+    data_str = input("Data da partida (dd/mm/aaaa): ").strip()
+    data_obj = parse_data_ddmmaaaa(data_str)
+    if not data_obj:
+        print("Data inválida.")
+        return
+    if not within_30_days(data_obj):
+        print("A data deve estar dentro dos próximos 30 dias.")
+        return
+    create_bus_for_line_date(idx, data_obj)
+    print("Ônibus criado para a data informada.")
+
+# Relatórios
+def total_arrecadado_linha():
+    mes_atual = hoje().month
+    ano_atual = hoje().year
+    totais = {}
     for v in vendas:
-        # A data está no formato YYYY-MM-DD, então dividimos
-        ano, mes, _ = map(int, v["Data"].split("-"))
-        # Verifica se a venda ocorreu no ano e mês atuais
-        if ano == ano_atual and mes == mes_atual:
-            linha = v["Linha"]
-            # Soma o valor ao total da linha correspondente
-            totais[linha] = totais.get(linha, 0) + v["Valor"] # totais.get(linha, 0) retorna 0 caso a linha ainda não exista no dicionário
+        data = v['data']
+        if isinstance(data, dt.date):
+            d = data
+        else:
+            # se houver strings, tentar parse
+            d = dt.date.fromisoformat(str(data))
+        if d.month == mes_atual and d.year == ano_atual:
+            idx = v['linha_idx']
+            totais[idx] = totais.get(idx, 0.0) + float(v['valor'])
     return totais
 
-#Calcular a ocupação percentual média de cada linha em cada dia da semana (matriz 7 dias)
 def ocupacao_media():
-    matriz = {} # estrutura: {linha: {dia: [ocupações]}}
-
-    # Processa cada registro de viagem
-    for v in viagem:
-        # Converte string "YYYY-MM-DD" para data real do Python
-        data = dt.date.fromisoformat(v["Data"])
-        # weekday() -> segunda=0, ..., domingo=6
-        dia = data.weekday()  # segunda=0 ... domingo=6
-        linha = v["Linha"]
-        # Calcula ocupação percentual da viagem
-        ocupacao = (v["Embarcados"] / v["Capacidade"]) * 100
-
-        # Se a linha ainda não existe, cria estrutura com 7 listas (uma para cada dia)
-        if linha not in matriz:
-            matriz[linha] = {d: [] for d in range(7)}
-        # Adiciona o valor de ocupação no respectivo dia da semana
-        matriz[linha][dia].append(ocupacao)
-
-    # cálculo das médias
+    # estrutura temporária: {linha_idx: {weekday: [ocupações%...]}}
+    temp = {}
+    for reg in viagens:
+        d = reg['data'] if isinstance(reg['data'], dt.date) else dt.date.fromisoformat(str(reg['data']))
+        weekday = d.weekday() # 0..6
+        idx = reg['linha_idx']
+        ocup = (reg['embarcados'] / reg['capacidade']) * 100
+        if idx not in temp:
+            temp[idx] = {i: [] for i in range(7)}
+        temp[idx][weekday].append(ocup)
     resultado = {}
-    for linha, dias in matriz.items():
-        # Para cada linha, cria um dicionário com a média por dia
-        resultado[linha] = {}
-        for dia, ocups in dias.items():
-            if ocups:  # há valores na lista
-                media = round(sum(ocups) / len(ocups), 2)
-            else:      # lista vazia → média = 0
-                media = 0
-
-            resultado[linha][dia] = media
-
+    for idx, dias in temp.items():
+        resultado[idx] = {}
+        for wd in range(7):
+            lista = dias.get(wd, [])
+            resultado[idx][wd] = round(sum(lista) / len(lista), 2) if lista else 0.0
     return resultado
 
-
-# Gerar Relatorio na tela
-def gerarRelatorios():
-    print("\n===== RELATÓRIO =====")
-
+def gerarRelatorios_em_tela():
+    print("===== RELATÓRIO =====")
+    totais = total_arrecadado_linha()
     print("\n1) Total arrecadado por linha no mês atual:")
-    # Chama a função que calcula o total arrecadado
-    totais = total_arrecadado_linha(vendas)
-    for linha, valor in totais.items():
-        print(f"Linha {linha}: R$ {valor:.2f}")
-
+    if not totais:
+        print("  Nenhuma venda no mês corrente.")
+    else:
+        for idx, val in totais.items():
+            print(f"  Linha {idx}: {linhas[idx]['origem']} -> {linhas[idx]['destino']} | R$ {val:.2f}")
     print("\n2) Ocupação média (%) por dia da semana:")
-    # Chama a função que calcula ocupações
-    matriz = ocupacao_media()
-    dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"] # Estética
-    # Imprime matriz por linha
-    for linha, valores in matriz.items():
-        print(f"\nLinha {linha}:")
-        for d in range(7):
-            print(f"  {dias[d]}: {valores[d]:.2f}%")
-'''
- Função: Ler um arquivo de reservas e:
- - marcar assentos no ônibus
- - registrar vendas
- - atualizar estatísticas de viagens
-'''
+    ocup = ocupacao_media()
+    dias = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"]
+    if not ocup:
+        print("  Nenhuma viagem registrada.")
+    else:
+        for idx, dados in ocup.items():
+            print(f"\nLinha {idx}: {linhas[idx]['origem']} -> {linhas[idx]['destino']}")
+            for d in range(7):
+                print(f"  {dias[d]}: {dados.get(d,0.0):.2f}%")
+
+def gerarRelatorios_em_arquivo():
+    totais = total_arrecadado_linha()
+    ocup = ocupacao_media()
+    texto = "===== RELATÓRIO =====\n\n1) Total arrecadado por linha no mês atual:\n"
+    if not totais:
+        texto += "  Nenhuma venda no mês corrente.\n"
+    else:
+        for idx, val in totais.items():
+            texto += f"  Linha {idx}: {linhas[idx]['origem']} -> {linhas[idx]['destino']} | R$ {val:.2f}\n"
+    texto += "\n2) Ocupação média (%) por dia da semana:\n"
+    dias = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"]
+    if not ocup:
+        texto += "  Nenhuma viagem registrada.\n"
+    else:
+        for idx, dados in ocup.items():
+            texto += f"\nLinha {idx}: {linhas[idx]['origem']} -> {linhas[idx]['destino']}\n"
+            for d in range(7):
+                texto += f"  {dias[d]}: {dados.get(d,0.0):.2f}%\n"
+    Path("Relatorio.txt").write_text(texto, encoding="utf-8")
+    print("Relatório salvo em Relatorio.txt")
+
+# Ler reservas de arquivo
+# Formato: CIDADE, HORÁRIO(hh:mm), DATA(dd/mm/aaaa), ASSENTO
+# ASSENTO pode ser "N" (número 1..20) ou formato "N" (1..20). Uma reserva por linha.
 def ler_reservas_arquivo(nome):
-    with open(nome, "r", encoding="utf-8") as f:
+    falhas = []
+    caminho = Path(nome)
+    if not caminho.exists():
+        print("Arquivo não encontrado.")
+        return
+    with caminho.open("r", encoding="utf-8") as f:
         for linha in f:
-            cidade, horario, data_str, assento = linha.strip().split(",")
-            # Remove espaços excedentes
-            cidade = cidade.strip()
-            horario = horario.strip()
-            # Converte data para objeto date
-            data = dt.datetime.strptime(data_str.strip(), "%d/%m/%Y").date()
-            # Assento no formato "x-y"
-            x, y = map(int, assento.strip().split("-"))
-
-            # Encontrar a linha correspondente, ou seja, procura a linha correspondente dentro do cadastro
-            for i in range(len(linhas["Cidade de origem"])):
-                if (linhas["Cidade de origem"][i] == cidade
-                   and linhas["Horário de partida"][i] == horario):
-
-                    # Marca o assento como ocupado (1)
-                    linhas["Ônibus"][i][x][y] = 1
-
-                    # registrar venda
-                    valor = linhas["Valor da passagem"][i]
-                    vendas.append({"Linha": i, "Data": data, "Valor": valor})
-
-                    # registrar viagem
-                    capacidade = 20
-                    embarcados = np.sum(linhas["Ônibus"][i])
-                    # Registra estatística de viagem
-                    viagem.append({"Linha": i, "Data": data, "Embarcados": embarcados, "Capacidade": capacidade})
+            linha_original = linha.rstrip("\n")
+            parts = linha.strip().split(",")
+            if len(parts) != 4:
+                falhas.append((linha_original, "Formato inválido"))
+                continue
+            cidade, horario, data_str, assento_str = [p.strip() for p in parts]
+            hora = parse_hora(horario)
+            data_obj = parse_data_ddmmaaaa(data_str)
+            if not hora or not data_obj:
+                falhas.append((linha_original, "Data ou horário inválido"))
+                continue
+            if not within_30_days(data_obj):
+                falhas.append((linha_original, "Data fora do período de 30 dias"))
+                continue
+            # encontrar linha que tenha destino igual à cidade e esse horário (assumimos que 'CIDADE' no arquivo é destino)
+            linha_encontrada = None
+            for i, l in enumerate(linhas):
+                if l['destino'].lower() == cidade.lower() and hora in l['horarios']:
+                    linha_encontrada = i
                     break
-
-
-#########################################################################################################################################################
+            if linha_encontrada is None:
+                falhas.append((linha_original, "Linha não encontrada para cidade/horário"))
+                continue
+            # verificar horário já passado
+            partida_dt = dt.datetime.combine(data_obj, dt.time(int(hora[:2]), int(hora[3:])))
+            if partida_dt < dt.datetime.now():
+                falhas.append((linha_original, "Ônibus já partiu"))
+                continue
+            # parse do assento
+            try:
+                num_assento = int(assento_str)
+            except Exception:
+                falhas.append((linha_original, "Assento inválido"))
+                continue
+            if not (1 <= num_assento <= 20):
+                falhas.append((linha_original, "Assento fora do intervalo 1-20"))
+                continue
+            # criar ônibus se necessário e tentar reservar
+            assentos = create_bus_for_line_date(linha_encontrada, data_obj)
+            idx = num_assento - 1
+            if assentos[idx] == 1:
+                falhas.append((linha_original, "Assento ocupado"))
+                continue
+            # tudo ok: reservar
+            assentos[idx] = 1
+            valor = linhas[linha_encontrada]['valor']
+            vendas.append({'linha_idx': linha_encontrada, 'data': data_obj, 'valor': valor})
+            embarcados = sum(assentos)
+            viagens.append({'linha_idx': linha_encontrada, 'data': data_obj, 'embarcados': embarcados, 'capacidade': 20})
+    # gravar falhas
+    if falhas:
+        with falhas_arquivo.open("a", encoding="utf-8") as out:
+            for linha, motivo in falhas:
+                out.write(f"{linha} -> {motivo}\n")
+        print(f"{len(falhas)} reserva(s) falharam. Detalhes gravados em {falhas_arquivo}")
+    else:
+        print("Todas as reservas do arquivo processadas com sucesso.")
 
 # Menu principal
 
@@ -465,12 +486,13 @@ while sair == 0 :
     try:
         print("\nSistema da Rodoviária:")
         print("1 - Cadastrar ou editar linhas;")
-        print("2 - Consultar horários disponíveis para uma cidade;")
-        print("3 - Consultar os assentos disponíveis no ônibus;")
-        print('4 - Marcar um assento de um ônibus;')
-        print('5 - Criar outro ônibus para uma linha já existente;')
-        print("6 - Gerar Relatório;")
-        print("0 - Sair.")
+        print("2 - Consultar horários por cidade de origem")
+        print("3 - Consultar assentos (destino, horário, data)")
+        print("4 - Marcar assento (direto)")
+        print("5 - Criar outro ônibus para uma linha em data")
+        print("6 - Ler reservas de arquivo")
+        print("7 - Gerar relatório")
+        print("0 - Sair")
 
         opcao = int(input("Opção: "))
 
@@ -490,22 +512,19 @@ while sair == 0 :
 
                         case 2:
                             del_linhas()
-                            print('\nEm breve..\n')
 
                         case 3:
                             edit_linhas()
-                            print('\nEm breve..\n')
 
                         case _:
                             print('\nErro: Digite um dos valores exibidos no menu!\n')
 
                 except(ValueError):
                     print('\nErro: Digite um número inteiro!\n')
-               
             
             case 2:
 
-                if (linhas['Ônibus']):
+                if linhas:
 
                     #Consultar horários disponíveis para uma cidade
                     consultarHorarios()
@@ -515,29 +534,38 @@ while sair == 0 :
                 
             case 3:
 
-                if (linhas['Ônibus']):
+                if linhas:
 
-                    lista_assentos = consultarAssentos()
-                    
-                    print('\nAssentos disponíveis:\n')
-
-                    for i in range(len(lista_assentos)):
-                        print(f'{lista_assentos[i]}\n')
+                    consultarAssentos()
 
                 else:
                     print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
                     
                 
-            case 4: #Marcar um assento
-                    
-                if (linhas['Ônibus']):
+            case 4:
+                listar_linhas_com_indices()
+                try:
+                    idx = int(input("Escolha índice da linha: "))
+                except:
+                    print("Índice inválido.")
+                    continue
+                if idx < 0 or idx >= len(linhas):
+                    print("Índice fora do intervalo.")
+                    continue
 
-                    preencher_onibus()
+                data_str = input("Data da partida (dd/mm/aaaa): ").strip()
+                data_obj = parse_data_ddmmaaaa(data_str)
+                if not data_obj or not within_30_days(data_obj):
+                    print("Data inválida ou fora do período de 30 dias.")
+                    continue
 
-                    confirmacao = str(input('\nDigite a tecla "Enter" para retornar ao menu.\n'))
+                horario = parse_hora(input("Horário (hh:mm): "))
+                if not horario:
+                    print("Horário inválido.")
+                    continue
 
-                else:
-                    print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
+                marcar_assento_em_onibus(idx, data_obj, horario)
+
 
             case 5:#Cria outro ônibus para uma linha já existente
 
@@ -549,41 +577,19 @@ while sair == 0 :
                     print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
             
             case 6:
-                try:
-                    opcao2 = int(input("Deseja gerar relatório:\n1 - Em arquivo .txt\n2 - Na tela\n-> "))
+                nome = input("Nome do arquivo de reservas: ").strip()
+                ler_reservas_arquivo(nome)
 
-                    totais = total_arrecadado_linha(vendas)
-                    ocupacao = ocupacao_media()
-
-                    if opcao2 == 1:
-                        relatorio = Path("Relatorio.txt")
-
-                        texto = "===== RELATÓRIO =====\n\n"
-
-                        texto += "1) Total arrecadado por linha no mês:\n"
-                        for linha, valor in totais.items():
-                            texto += f"   Linha {linha}: R$ {valor:.2f}\n"
-
-                        texto += "\n2) Ocupação média por dia da semana (%):\n"
-                        dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-
-                        for linha, dados in ocupacao.items():
-                            texto += f"\n   Linha {linha}:\n"
-                            for d in range(7):
-                                texto += f"      {dias[d]}: {dados[d]:.2f}%\n"
-
-                        relatorio.write_text(texto, encoding="utf-8")
-                        print("\nRelatório salvo em Relatorio.txt!\n")
-
-                    elif opcao2 == 2:
-                        gerarRelatorios()
-
-                    else:
-                        print("\nErro: Opção inválida!\n")
-
-                except ValueError:
-                    print("\nErro: Digite um número inteiro!\n")
-
+            case 7:
+                print("\n1 - Mostrar relatório na tela")
+                print("2 - Salvar relatório em arquivo")
+                escolha = input("Escolha: ").strip()
+                if escolha == "1":
+                    gerarRelatorios_em_tela()
+                elif escolha == "2":
+                    gerarRelatorios_em_arquivo()
+                else:
+                    print("Opção inválida")
                 
             case 0:
 
