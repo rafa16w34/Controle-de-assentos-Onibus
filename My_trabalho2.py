@@ -1,5 +1,6 @@
 import datetime as dt
 from pathlib import Path
+import os
 
 # Dados principais
 linhas = []  # cada item: {'origem':str, 'destino':str, 'horarios':[hh:mm,...], 'valor':float, 'onibus': { 'YYYY-MM-DD': [0/1 x20] } }
@@ -47,12 +48,13 @@ def verificar_onibus_linha_data(linha_idx, date_obj): # Retorna True se já houv
     key = date_obj.isoformat()
     return key in linhas[linha_idx]['onibus']
 
-def criar_onibus_porlinha_data(linha_idx, date_obj): # Cria (se necessário) e retorna o vetor de 20 assentos (0 = livre, 1 = ocupado) para a linha e data informadas.
-    key = date_obj.isoformat()
+def criar_onibus_porlinha_data(linha_idx, date_obj, horario): # Cria (se necessário) e retorna o vetor de 20 assentos (0 = livre, 1 = ocupado) para a linha e data informadas.
+    key = f"{date_obj.isoformat()}_{horario}"
     # Se ainda não existe um ônibus nesta data, cria
     if key not in linhas[linha_idx]['onibus']:
-        linhas[linha_idx]['onibus'][key] = [0] * 20  # 20 assentos, 0 livre, 1 ocupado
-    return linhas[linha_idx]['onibus'][key] # Retorna o vetor de assentos da data
+        linhas[linha_idx]['onibus'][key] = [0] * 20  # 20 assentos
+
+    return linhas[linha_idx]['onibus'][key]# Retorna o vetor de assentos da data
 
 def imprimir_mapa_assentos(assentos):
     # exibe assentos 1..20, marcando L ou X, e indicando janelas (ímpares)
@@ -245,7 +247,7 @@ def consultarAssentos():
         print("Ônibus já partiu. Não é possível vender passagem para essa partida.")
         return
 
-    assentos = criar_onibus_porlinha_data(linha_idx, data_obj)
+    assentos = criar_onibus_porlinha_data(linha_idx, data_obj, horario)
     print("\nMapa de assentos (L = Livre, X = Ocupado) [ímpares = janela]:\n")
     imprimir_mapa_assentos(assentos)
 
@@ -279,7 +281,7 @@ def marcar_assento_em_onibus(linha_idx, data_obj, horario_str=None):
     minuto = int(horario_str[3:])
 
     # Criar/obter assentos do ônibus
-    assentos = criar_onibus_porlinha_data(linha_idx, data_obj)
+    assentos = criar_onibus_porlinha_data(linha_idx, data_obj, horario)
 
     # Número do assento
     try:
@@ -323,13 +325,13 @@ def marcar_assento_em_onibus(linha_idx, data_obj, horario_str=None):
             "linha_idx": linha_idx,
             "data": data_obj,
             "horario": horario_str,
-            "vendidos": 0,
+            "embarcados": 0,
             "valor_unitario": valor
         }
         viagens.append(viagem)
 
     # Atualiza ocupação real
-    viagem["vendidos"] += 1
+    viagem["embarcados"] += 1
 
     print(f"Reserva realizada: Linha {linha_idx}, Data {data_obj.strftime('%d/%m/%Y')}, "
           f"Horário {horario_str}, Assento {num} | Valor R$ {valor:.2f}")
@@ -345,6 +347,11 @@ def criar_outro_onibus():
     if idx < 0 or idx >= len(linhas):
         print("Índice fora do intervalo.")
         return
+    print("Horários disponíveis:", ", ".join(linhas[idx]['horarios']))
+    horario = parse_hora(input("Digite o horário do ônibus (hh:mm): ").strip())
+    if not horario:
+        print("Horário inválido.")
+        return
     data_str = input("Data da partida (dd/mm/aaaa): ").strip()
     data_obj = parse_data_ddmmaaaa(data_str)
     if not data_obj:
@@ -353,7 +360,8 @@ def criar_outro_onibus():
     if not verificar_dias(data_obj):
         print("A data deve estar dentro dos próximos 30 dias.")
         return
-    criar_onibus_porlinha_data(idx, data_obj)
+    criar_onibus_porlinha_data(idx, data_obj, horario)
+    viagens.append({"linha_idx": idx,"data": data_obj,"horario": horario,"embarcados": 0,"capacidade": 20})
     print("Ônibus criado para a data informada.")
 
 # Relatórios
@@ -436,71 +444,98 @@ def gerarRelatorios_em_arquivo():
 # Ler reservas de arquivo
 # Formato: CIDADE, HORÁRIO(hh:mm), DATA(dd/mm/aaaa), ASSENTO
 # ASSENTO pode ser "N" (número 1..20) ou formato "N" (1..20). Uma reserva por linha.
-def ler_reservas_arquivo(nome):
-    falhas = []
-    caminho = Path(nome)
-    if not caminho.exists():
-        print("Arquivo não encontrado.")
+def ler_reservas_arquivo(nome_arquivo):
+    """
+    Lê um arquivo de reservas no formato:
+    linha;data(dd/mm/aaaa);horário(hh:mm);assento
+
+    Exemplo:
+    0;02/12/2025;11:00;1
+    """
+
+    rejeitadas = []  # lista de reservas não realizadas
+    total_lidas = 0
+    total_ok = 0
+
+    if not os.path.exists(nome_arquivo):
+        print(f"Arquivo '{nome_arquivo}' não encontrado.")
         return
-    with caminho.open("r", encoding="utf-8") as f:
-        for linha in f:
-            linha_original = linha.rstrip("\n")
-            parts = linha.strip().split(",")
-            if len(parts) != 4:
-                falhas.append((linha_original, "Formato inválido"))
+
+    print(f"\nLendo arquivo: {nome_arquivo}")
+
+    with open(nome_arquivo, "r", encoding="utf-8") as arq:
+        for linha in arq:
+            linha = linha.strip()
+            if not linha:
                 continue
-            cidade, horario, data_str, assento_str = [p.strip() for p in parts]
-            hora = parse_hora(horario)
-            data_obj = parse_data_ddmmaaaa(data_str)
-            if not hora or not data_obj:
-                falhas.append((linha_original, "Data ou horário inválido"))
-                continue
-            if not verificar_dias(data_obj):
-                falhas.append((linha_original, "Data fora do período de 30 dias"))
-                continue
-            # encontrar linha que tenha destino igual à cidade e esse horário (assumimos que 'CIDADE' no arquivo é destino)
-            linha_encontrada = None
-            for i, l in enumerate(linhas):
-                if l['destino'].lower() == cidade.lower() and hora in l['horarios']:
-                    linha_encontrada = i
-                    break
-            if linha_encontrada is None:
-                falhas.append((linha_original, "Linha não encontrada para cidade/horário"))
-                continue
-            # verificar horário já passado
-            partida_dt = dt.datetime.combine(data_obj, dt.time(int(hora[:2]), int(hora[3:])))
-            if partida_dt < dt.datetime.now():
-                falhas.append((linha_original, "Ônibus já partiu"))
-                continue
-            # parse do assento
+
+            total_lidas += 1
+
             try:
-                num_assento = int(assento_str)
-            except Exception:
-                falhas.append((linha_original, "Assento inválido"))
+                idx_str, data_str, hora_str, assento_str = linha.split(";")
+                linha_idx = int(idx_str)
+                assento = int(assento_str)
+
+            except:
+                rejeitadas.append((linha, "Formato inválido"))
                 continue
-            if not (1 <= num_assento <= 20):
-                falhas.append((linha_original, "Assento fora do intervalo 1-20"))
+
+            # verifica se a linha existe
+            if linha_idx < 0 or linha_idx >= len(linhas):
+                rejeitadas.append((linha, "Linha inexistente"))
                 continue
-            # criar ônibus se necessário e tentar reservar
-            assentos = criar_onibus_porlinha_data(linha_encontrada, data_obj)
-            idx = num_assento - 1
-            if assentos[idx] == 1:
-                falhas.append((linha_original, "Assento ocupado"))
+
+            # converte data
+            try:
+                date_obj = dt.datetime.strptime(data_str, "%d/%m/%Y").date()
+            except:
+                rejeitadas.append((linha, "Data inválida"))
                 continue
-            # tudo ok: reservar
-            assentos[idx] = 1
-            valor = linhas[linha_encontrada]['valor']
-            vendas.append({'linha_idx': linha_encontrada, 'data': data_obj, 'valor': valor})
-            embarcados = sum(assentos)
-            viagens.append({'linha_idx': linha_encontrada, 'data': data_obj, 'embarcados': embarcados, 'capacidade': 20})
-    # gravar falhas
-    if falhas:
-        with falhas_arquivo.open("a", encoding="utf-8") as out:
-            for linha, motivo in falhas:
-                out.write(f"{linha} -> {motivo}\n")
-        print(f"{len(falhas)} reserva(s) falharam. Detalhes gravados em {falhas_arquivo}")
-    else:
-        print("Todas as reservas do arquivo processadas com sucesso.")
+
+            # verifica se o horário existe
+            horarios_validos = linhas[linha_idx]["horarios"]
+            if hora_str not in horarios_validos:
+                rejeitadas.append((linha, "Horário não existe na linha"))
+                continue
+
+            # cria/pega o ônibus daquela data/hora
+            key_data = date_obj.isoformat()
+
+            if key_data not in linhas[linha_idx]["onibus"]:
+                linhas[linha_idx]["onibus"][key_data] = {}
+
+            if hora_str not in linhas[linha_idx]["onibus"][key_data]:
+                linhas[linha_idx]["onibus"][key_data][hora_str] = [0] * 20
+
+            onibus = linhas[linha_idx]["onibus"][key_data][hora_str]
+
+            # verifica assento
+            if assento < 1 or assento > 20:
+                rejeitadas.append((linha, "Assento inválido"))
+                continue
+
+            if onibus[assento - 1] == 1:
+                rejeitadas.append((linha, "Assento já ocupado"))
+                continue
+
+            # aplica a reserva
+            onibus[assento - 1] = 1
+            total_ok += 1
+
+    # salva rejeitadas
+    if rejeitadas:
+        with open("reservas_nao_efetuadas.txt", "w", encoding="utf-8") as out:
+            for reg, motivo in rejeitadas:
+                out.write(f"{reg}  -->  {motivo}\n")
+
+        print(f"\n⚠ Algumas reservas não foram realizadas. Arquivo gerado:")
+        print("   reservas_nao_efetuadas.txt")
+
+    print("\nResumo da importação:")
+    print(f" - Total lidas: {total_lidas}")
+    print(f" - Efetuadas: {total_ok}")
+    print(f" - Rejeitadas: {len(rejeitadas)}")
+
 
 # Menu principal
 
@@ -586,7 +621,7 @@ while sair == 0 :
 
             case 5:#Cria outro ônibus para uma linha já existente
 
-                if (linhas['Ônibus']):
+                if linhas:
 
                     criar_outro_onibus()
 
@@ -594,8 +629,30 @@ while sair == 0 :
                     print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
             
             case 6:
-                nome = input("Nome do arquivo de reservas: ").strip()
-                ler_reservas_arquivo(nome)
+                print("\n=== Importação de Reservas via Arquivo ===")
+
+                # Lista todos os arquivos .txt da pasta
+                arquivos = [f for f in os.listdir() if f.endswith(".txt")]
+
+                if not arquivos:
+                    print("Nenhum arquivo .txt encontrado na pasta do sistema.\n")
+                    break
+
+                print("Arquivos de reserva disponíveis:")
+                for i, nome in enumerate(arquivos):
+                    print(f"{i} - {nome}")
+
+                try:
+                    idx = int(input("\nEscolha o índice do arquivo: ").strip())
+                    nome_arquivo = arquivos[idx]
+                except:
+                    print("Índice inválido.\n")
+                    break
+
+                # Chama o processador
+                ler_reservas_arquivo(nome_arquivo)
+                print(f"\nProcessamento concluído para o arquivo: {nome_arquivo}\n")
+
 
             case 7:
                 print("\n1 - Mostrar relatório na tela")
