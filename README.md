@@ -29,6 +29,10 @@ O projeto apresenta uma tela primitiva no prompt personalizada pelos strings do 
 * Consultar assentos disponiveis ou ocupados ou reservados;
 * Gerar relatório no prompt ou em um arquivo .txt;
 * Mostrar arquivo de reseva de assentos;
-*  
-# 5) Conclusão:
+
+# 5) REQUISITOS:
+* Python 3.8+;
+* Instalar numpy;
+
+# 6) Conclusão:
 Esse trabalho acrescentou muito para os autores do projeto a aplicar na prática tudo o que aprenderam ao longo do semestre, pois foi necessario usar funções, listas, dicionários e gerenciamento de arquivos em python, além de entender como uma preparação para diversos projetos de softwares futuros ou aprimorar este projeto para criar interface gráfica como o Kivy, criar API em Flask/FastAPI ou Adicionar JSON ou um banco de dados real.   
