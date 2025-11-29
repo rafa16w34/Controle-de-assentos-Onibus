@@ -1,6 +1,8 @@
 # Trabalho 2 de Programação Python: Controle de assentos de Ônibus
 
-# Autores: Rafael Alves Faria e Gabriel Alves Faria
+# Autores: 
+* Rafael Alves Faria
+* Gabriel Alves Faria
 
 # 1) Sobre o Projeto:
 
