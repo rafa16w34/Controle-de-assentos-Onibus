@@ -21,5 +21,13 @@ O projeto inicializa com o usuário escolhendo a opção de criar uma linha de �
 # 3) Opções Oferecidas:
 
 # 4) Principais Telas:
-
+O projeto apresenta uma tela primitiva no prompt personalizada pelos strings do python.
+* Menu inicial;
+* Menu da opção um de criar, editar e deletar;
+* Definir onibus;
+* Escolher assento;
+* Consultar assentos disponiveis ou ocupados ou reservados;
+* Gerar relatório no prompt ou em um arquivo .txt;
+* Mostrar arquivo de reseva de assentos;
+*  
 # 5) Conclusão:
