@@ -583,6 +583,11 @@ def processar_arquivo_reservas(nome_arquivo: str):
 # Relatórios
 
 def relatorio_total_arrecadado_mes_corrente():
+    '''
+    Gera e exibe o relatório com o total arrecadado em vendas no mês e no ano atuais para cada linha cadastrada.
+    A função percorre todas as linhas e soma o valor de todas as vendas cuja data corresponde ao mês e ano corrente, exibindo o total
+    arrecadado por linha no terminal.
+    '''
     hoje = dt.date.today()
     mes = hoje.month
     ano = hoje.year
@@ -622,6 +627,11 @@ def relatorio_ocupacao_media_por_dia_da_semana():
     print()
 
 def gerarRelatorios():
+    '''
+    Exibe o menu de relatórios disponíveis e solicita ao usuário que escolha qual deles deseja gerar:
+    Relatório do total arrecadado no mês corrente por linha, 
+    Relatório da ocupação percentual média por linha ao longo dos dias da semana.
+    '''
     print("\nRelatórios disponíveis:")
     print("1 - Total arrecadado no mês corrente por linha")
     print("2 - Ocupação percentual média por linha por dia da semana")
