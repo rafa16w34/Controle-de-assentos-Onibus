@@ -12,48 +12,46 @@ onibus = {'Data da partida': [], 'Assentos Disponíveis':[]}#Dicionário do ôni
 #Funções:
 
 #Criar uma linha com as informações fornecidadas:
+def cadastroLinhas():
 
-def cadastroLinhas():# Preenche a linha com os dados que o usuario fornece
+    cidade_origem_digitada = input('\nDigite o nome da cidade de origem da linha:\n-> ')
+    cidade_destino_digitada = input('\nDigite o nome da cidade de destino da linha:\n-> ')
+    hora_digitada = input('\nDigite a hora que ele irá sair: \nFormato: ( 00:00 )\n-> ')
 
-    cidade_origem_digitada = str(input('\nDigite o nome da cidade de origem da linha:\n-> '))
+    # ---------------- VALIDAÇÃO DO HORÁRIO ----------------
+    if hora_digitada.find(':') != 2:
+        print('\nErro: Digite um horário no formato correto!\n')
+        return  # impede registro
 
-    cidade_destino_digitada = str(input('\nDigite o nome da cidade de destino da linha:\n-> '))
+    hora, minuto = hora_digitada.split(':')
 
-    hora_digitada = str(input('\nDigite a hora que ele irá sair: \nFormato: ( 00:00 )\n-> '))
+    try:
+        hora = int(hora)
+        minuto = int(minuto)
+    except ValueError:
+        print('\nErro: Horário deve conter apenas números!\n')
+        return
 
-    if (hora_digitada.find(':') == 2):
+    if not (0 <= hora < 24 and 0 <= minuto < 60):
+        print('\nErro: Horário inválido!\n')
+        return
 
-        hora_digitada = hora_digitada.split(':')
+    # ---------------- VALIDAÇÃO DO VALOR ----------------
+    try:
+        valor_passagem = int(input('\nDigite o valor em reais da passagem:\n-> R$'))
+    except ValueError:
+        print('\nErro: Digite um número inteiro para o valor!\n')
+        return  # impede registro
 
-        hora_atual = int(hora_digitada[0])
-        minuto_atual = int(hora_digitada[1])
+    # ---------------- CRIA A LINHA ----------------
 
-        if (hora_atual < 24) and (hora_atual >= 0) and (minuto_atual < 59) and (minuto_atual >= 0):
+    linhas['Cidade de origem'].append(cidade_origem_digitada)
+    linhas['Cidade de destino'].append(cidade_destino_digitada)
+    linhas['Horário de partida'].append(f'{hora}:{minuto}')
+    linhas['Valor da passagem'].append(valor_passagem)
+    linhas['Ônibus'].append(gerar_onibus())
 
-            linhas['Cidade de origem'].append(cidade_origem_digitada)
-            linhas['Cidade de destino'].append(cidade_destino_digitada)
-
-            linhas['Horário de partida'].append((f'{hora_atual}:{minuto_atual}'))
-            
-            try:
-
-                linhas['Valor da passagem'].append(int(input('\nDigite o valor em reais da passagem:\n-> R$')))
-
-            except(ValueError):
-
-                print('\nErro: Digite um número inteiro!\n')
-                pass
-
-            linhas['Ônibus'].append((gerar_onibus()))
-
-        else:
-
-            pass
-
-    else:
-
-        print('\nErro: Digite uma data no formato correto!\n')
-        pass
+    print('\nLinha cadastrada com sucesso!\n')
     
 #####################################################################################################################################################
 
@@ -127,7 +125,15 @@ def escolher_onibus():#Escolher um do ônibus para fazer a viagem
 
         onibus_escolhido = int(input('\nDigite o número do ônibus:\n-> '))
 
-        return(onibus_escolhido)
+        if (onibus_escolhido <= len(linhas['Ônibus'])):
+
+            return(onibus_escolhido)
+        
+        else:
+            print('\nErro: Digite um ônibus existente!\n')
+
+            return(None)
+
 
     except(ValueError):
         print('\nErro: Digite um número inteiro!\n')
@@ -139,50 +145,62 @@ def preencher_onibus():#Escolher qual será seu assento
 
     onibus_escolhido = escolher_onibus()
 
-    onibus = linhas['Ônibus'][onibus_escolhido]
-    
-    print(onibus)
+    if (onibus_escolhido != None):
 
-    i = int(input(f"Digite qual assento você gostaria de ocupar (x): "))
-    j = int(input(f"Digite qual assento você gostaria de ocupar (y): "))
+        onibus = linhas['Ônibus'][onibus_escolhido]
 
-    if(i< 5) and (j<4):
+        matriz_onibus = np.empty_like(onibus,dtype=str)
 
-        if onibus[i][j] != 1:
+        for i, j in np.ndindex(onibus.shape):
+            if onibus[i][j] == 0:
+                matriz_onibus[i][j] = '0'
+            else:
+                matriz_onibus[i][j] = '1'
 
-            onibus[i][j] = 1
+        print(matriz_onibus)
+
+        i = int(input(f"Digite qual assento você gostaria de ocupar (x): "))
+        j = int(input(f"Digite qual assento você gostaria de ocupar (y): "))
+
+        if(i< 5) and (j<4):
+
+            if onibus[i][j] != 1:
+
+                onibus[i][j] = 1
+            
+                print(f'\nO valor será de : R$ {linhas["Valor da passagem"][onibus_escolhido]:.2f}\n')
+
+                print('\nCompra realizada com sucesso!\n')
+
+
+            else:
+                print('\nErro: Esse assento já está ocupado.\n')
+
 
         else:
-            print('\nErro: Esse assento já está ocupado.\n')
+
+            print('\nErro: Esse assento não existe!\n')
 
 
-    else:
-
-        print('\nErro: Esse assento não existe!\n')
-
-    print(f'\nO valor será de : R$ {linhas["Valor da passagem"][onibus_escolhido]:.2f}\n')
-
-    print('\nCompra realizada com sucesso!\n')
 
 #####################################################################################################################################
 
 #Consulta os assentos do Ônibus
-  
+
 def consultarAssentos():
 
     onibus_escolhido = escolher_onibus()
-
     assentos = linhas['Ônibus'][onibus_escolhido]
 
-    onibus['Assentos Disponíveis'] = [None]
+    matriz_assentos = np.empty_like(assentos, dtype=str)
 
     for i, j in np.ndindex(assentos.shape):
+        if assentos[i][j] == 0:
+            matriz_assentos[i][j] = '0'
+        else:
+            matriz_assentos[i][j] = '1' 
 
-        if (assentos[i][j] == 0) and (assentos[i][j] != None):
-            onibus['Assentos Disponíveis'].append(f'[{i},{j}]')
-
-
-    return(onibus['Assentos Disponíveis'])
+    return matriz_assentos
 
 ############################################################################################################################################
 
@@ -191,23 +209,14 @@ def consultarAssentos():
 def consultarHorarios():
 
     horarios_cidade = []
-    cidade_exibida = []
+    cidades_unicas = list(dict.fromkeys(linhas['Cidade de origem']))
 
     print('\nCidades existentes:\n')
 
     for i in range(len(linhas['Cidade de origem'])):
 
-        if (len(linhas['Cidade de origem'])) > 1:
-
-            if ((linhas['Cidade de origem'][i]) not in cidade_exibida):
-
-                print(f'Cidade {i} | {linhas["Cidade de origem"][i]} |\n')  #Ele pode digitar um número i de uma das cidades repetidas
-                
-                cidade_exibida.append(linhas['Cidade de origem'][i])        #Posso usar essa lista para contornar esse erro
-
-        else:
-
-            print(f'Cidade {i} | {linhas["Cidade de origem"][i]} |\n')
+        for i, cidade in enumerate(cidades_unicas):
+            print(f'{i} - {cidade}')
 
     try:
 
@@ -309,8 +318,7 @@ while sair == 0 :
                     
                     print('\nAssentos disponíveis:\n')
 
-                    for i in range(len(lista_assentos)):
-                        print(f'{lista_assentos[i]}\n')
+                    print(lista_assentos)
 
                 else:
                     print('\nErro: Nenhuma linha foi criada para que se possa verificar!\n')
