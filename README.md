@@ -19,6 +19,26 @@
 O projeto inicializa com o usuário escolhendo a opção de criar uma linha de ônibus na opção um do menu principal e no menu da mesma, onde é possivel editar ou apagar a linha já existente. O projeto se finaliza quando o usuário escolher a opção zero, que ira encerrar no prompt.
 
 # 3) Opções Oferecidas:
+* 1 - Cadastrar, editar ou excluir linhas;
+Permite criar novas linhas de ônibus informando cidade de origem, cidade de destino, horário da viagem e valor da passagem após cadastrada, além de também ser possível editar esses dados.
+* 2 - Consultar horários disponíveis para uma cidade
+O usuário informa uma cidade, e o sistema lista todas as linhas que partem ou chegam nela, exibindo horários e preços.
+* 3 - Consultar os assentos disponíveis no ônibus:
+Exibe o mapa de assentos do ônibus (5 x 4), marcando: "L" para assento livre e "X" para ocupado. O usuário escolhe a linha e o ônibus desejado.
+* 4 - Marcar (reservar) um assento de um ônibus:
+Permite reservar um assento informando a linha, a data / horário e o número do assento (1 a 20). O sistema verifica disponibilidade e registra a reserva.
+* 5 - Criar outro ônibus (adicionar data) para uma linha já existente. Caso uma linha precise operar em mais de uma data, o sistema permite criar um novo ônibus associando: data da viagem, nova matriz de assentos vazia e armazenamento de reservas futuras
+* 6 - Ler reservas de arquivo (formato especificado). Permite carregar um arquivo texto contendo várias reservas.
+O sistema:
+tenta realizar cada reserva;
+rejeita reservas inválidas;
+salva em outro arquivo os erros e motivos (por exemplo: assento ocupado, linha inexistente, data inválida, etc.).
+* 7 - Gerar relatórios: Gera relatórios como:
+total arrecadado por linha;
+ocupação média (%) dos ônibus;
+quantidade de assentos ocupados por viagem.
+* 8 - Listar todas as linhas e ônibus cadastrados: Mostra um resumo com todas as linhas existentes e suas datas de operação, cada uma com seus respectivos ônibus cadastrados.
+* 0 - Sair: Encerra o programa.
 
 # 4) Principais Telas:
 O projeto apresenta uma tela primitiva no prompt personalizada pelos strings do python.
