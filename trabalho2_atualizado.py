@@ -629,8 +629,8 @@ def relatorio_ocupacao_media_por_dia_da_semana():
 def gerarRelatorios():
     '''
     Exibe o menu de relatórios disponíveis e solicita ao usuário que escolha qual deles deseja gerar:
-    Relatório do total arrecadado no mês corrente por linha, 
-    Relatório da ocupação percentual média por linha ao longo dos dias da semana.
+    Relatório do total arrecadado no mês corrente por linha; 
+    E relatório da ocupação percentual média por linha ao longo dos dias da semana.
     '''
     print("\nRelatórios disponíveis:")
     print("1 - Total arrecadado no mês corrente por linha")
