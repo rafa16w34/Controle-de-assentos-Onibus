@@ -1,8 +1,0 @@
---- Processamento em 01/12/2025 13:44:39 - Arquivo: bao.txt ---
---- Relatório gerado em 01/12/2025 11:43:33 --- -> Motivo: Formato inválido (esperado 4 campos)
-Relatório - Total arrecadado no mês corrente (12/2025): -> Motivo: Formato inválido (esperado 4 campos)
-Linha 0: real -> filho | Total: R$ 0.00 -> Motivo: Formato inválido (esperado 4 campos)
---- Relatório gerado em 01/12/2025 11:44:00 --- -> Motivo: Formato inválido (esperado 4 campos)
-Relatório - Ocupação percentual média por linha por dia da semana (Seg..Dom): -> Motivo: Formato inválido (esperado 4 campos)
-Linha 0: real -> filho  ||    0.0% |   0.0% |   0.0% |   0.0% |   0.0% |   0.0% |   0.0% -> Motivo: Formato inválido (esperado 4 campos)
-
