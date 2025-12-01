@@ -735,7 +735,7 @@ def processar_arquivo_reservas(nome_arquivo: str):
 
             falhas.append((linha_txt, "Formato inválido (esperado 4 campos)"))
             continue
-        
+
         cidade, horario_str, data_str, assento_str = partes
 
         # encontrar linhas com destino igual à cidade e horário igual
@@ -821,14 +821,11 @@ def processar_arquivo_reservas(nome_arquivo: str):
 
 """MENU PRINCIPAL:"""
 
-
 print('\nSeja bem vindo ao sistema de controle de rodoviária!\nCriado por: Gabriel e Rafael Alves Faria\n')
 
 sair = 0
 
 while sair == 0:
-
-
     try:
         print("\nSistema da Rodoviária:")
         print("1 - Cadastrar ou editar linhas;")
