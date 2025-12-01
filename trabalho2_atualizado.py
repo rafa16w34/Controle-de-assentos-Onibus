@@ -132,7 +132,7 @@ def verificar_horario(horario):#Verifica se o horário foi digitada corretamente
     
     if horario.find(':') != 2:
 
-        print("\nERRO: Digite o horário no formato correto!(HH:MM)\n")
+        print("\nERRO: Digite o horário no formato correto!(00:00)\n")
         return None
     
     hora, minuto = horario.split(':')
@@ -149,7 +149,7 @@ def verificar_horario(horario):#Verifica se o horário foi digitada corretamente
     
     if not (0 <= hora < 24 and 0 <= minuto < 60):
 
-        print("Horário fora do intervalo.")
+        print("ERRO: Horário fora do intervalo de 24hrs.")
         return None
     
     return hora, minuto
@@ -191,10 +191,10 @@ def cadastroLinhas():#Função que cria as linhas
     
 
     try:
-        valor = int(input('Digite o valor em reais da passagem:\n-> R$'))
+        valor = int(input('\nDigite o valor em reais da passagem:\n-> R$'))
 
     except ValueError:
-        print('\nErro: Digite um número inteiro!\n')
+        print('\nERRO: Digite um número inteiro!\n')
         return
 
     linha = {#Dicionário da linha preenchido
@@ -237,20 +237,20 @@ def remover_linha():#Função para remover uma linha
     listar_linhas()
 
     try:
-        indice = int(input("Digite o índice da linha a remover:\n-> "))
+        indice = int(input("\nDigite o índice da linha a remover:\n-> "))
 
     except ValueError:
-        print("Erro: digite um número inteiro.")
+        print("\nERRO: digite um número inteiro.\n")
         return
     
 
     if 0 <= indice < len(linhas):#Se o indice estiver for realmente de uma linha..
 
         linhas.pop(indice)
-        print("Linha removida.")
+        print("\nLinha removida com sucesso.\n")
 
     else:
-        print("Índice inválido.")
+        print("\nERRO: Índice inválido.\n")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -259,24 +259,22 @@ def editar_linha():
     listar_linhas()
 
     try:
-        indice = int(input("Digite o índice da linha a editar:\n-> "))
+        indice = int(input("\nDigite o índice da linha a editar:\n-> "))
 
     except ValueError:
-        print("Erro: digite um número inteiro.")
+        print("\nERRO: digite um número inteiro.\n")
         return
     
 
     if not (0 <= indice < len(linhas)):
-        print("Índice inválido.")
+        print("\nERRO: Índice inválido.\n")
         return
     
 
     linha_escolhida = linhas[indice]
 
-    #Criar um switch case para ficar mais organizado
-    print("Deixe em branco para manter o valor atual.")
 
-    opcao = int(input(f'\nDigite uma das opções para editar:\n1- Origem atual [{l['origem']}]\n2- Destino atual [{l['destino']}]\n3- Horário atual [{l['horario']}]\n4- Valor atual [R$ {l['valor']}]\n0- Voltar\n-> '))
+    opcao = int(input(f'\nDigite uma das opções para editar:\n1- Origem atual [{linha_escolhida['origem']}]\n2- Destino atual [{linha_escolhida['destino']}]\n3- Horário atual [{linha_escolhida['horario']}]\n4- Valor atual [R$ {linha_escolhida['valor']}]\n0- Voltar\n-> '))
 
     match(opcao):
 
@@ -326,28 +324,27 @@ def criar_onibus_para_linha():#Função que adiciona um ônibus a uma linha já 
     try:
         indice = int(input("\nDigite o índice da linha para adicionar um ônibus:\n-> "))
     except ValueError:
-        print("\nErro: digite um número inteiro.\n")
+        print("\nERRO: Digite um número inteiro.\n")
         return
     
 
     if not (0 <= indice < len(linhas)):
-        print("\nErro: Digite um ínndice válido.\n")
+        print("\nERRO: Digite um ínndice válido.\n")
         return
     
 
     data_str = input("\nDigite a data da viagem (dd/mm/aaaa):\n-> ")
 
-
     data_viagem = verificar_data(data_str)
 
-    if (data_viagem != None):
+    if (data_viagem == None):
         
         return
     
 
     if not dentro_de_30_dias(data_viagem):
 
-        print("\nErro: a data deve ser dentro dos próximos 30 dias (e não no passado).\n")
+        print("\nERRO:A data deve ser dentro dos próximos 30 dias (e não no passado).\n")#Nossos ônibus não tem capacitores de fluxo..
         return
     
 
@@ -368,7 +365,7 @@ def escolher_linha_onibus():#Para o usário escolher uma linha e um ônibus da m
     candidatos = [(i, l) for i, l in enumerate(linhas) if l['destino'].lower() == cidade.lower()]#Lista as linhas que têm esse destino
 
     if not candidatos:#Se não houver linhas com esse destino não retorna nada
-        print("\nNenhuma linha encontrada para essa cidade.\n")
+        print("\nERRO: Nenhuma linha encontrada para essa cidade.\n")
         return None, None
     
 
@@ -382,20 +379,20 @@ def escolher_linha_onibus():#Para o usário escolher uma linha e um ônibus da m
         indice_linha = int(input("\nEscolha o índice da linha (entre os listados):\n-> "))
 
     except ValueError:
-        print("\nErro: digite um número inteiro.\n")
+        print("\nERRO: digite um número inteiro.\n")
         return None, None
     
 
     if not (0 <= indice_linha < len(linhas)) or (linhas[indice_linha]['destino'].lower() != cidade.lower()):#trata caso o indice não exista ou se a cidade de destino for diferente
-        print("\nÍndice inválido para a cidade informada.\n")
+        print("\nERRO: Índice inválido para a cidade informada.\n")
         return None, None
     
 
     
     linha_escolhida = linhas[indice_linha]# Agora o usuário escolhe data dentre ônibus disponíveis
 
-    if not linha_escolhida['onibus']:#Se a linha não tiver ônibus, irá retornar nada
-        print("\nEssa linha não tem ônibus cadastrados (datas).\n")
+    if not (linha_escolhida['onibus']):#Se a linha não tiver ônibus, irá retornar nada
+        print("\nERRO: Essa linha não tem ônibus cadastrados .\n")
         return None, None
     
 
@@ -406,15 +403,15 @@ def escolher_linha_onibus():#Para o usário escolher uma linha e um ônibus da m
     
     
     try:
-        indice_onibus = int(input("\nEscolha o índice do ônibus (data):\n-> "))#Usuário digita qual ônibus ele quer
+        indice_onibus = int(input("\nEscolha o índice do ônibus:\n-> "))#Usuário digita qual ônibus ele quer
 
     except ValueError:
-        print("\nErro: digite um número inteiro.\n")
+        print("\nERRO: digite um número inteiro.\n")
         return None, None
     
 
     if not (0 <= indice_onibus < len(l['onibus'])):#Se o índice não existir
-        print("\nÍndice de ônibus inválido.\n")
+        print("\nERRO: Índice de ônibus inválido.\n")
         return None, None
     
 
@@ -434,7 +431,7 @@ def consultarHorarios():#Função para o usuário consultar os horários dispon�
 
     if not horarios:#Se a lista ficar vazia....
 
-        print("\nNenhum horário encontrado para essa cidade.\n")
+        print("\nERRO: Nenhum horário encontrado para essa cidade.\n")
 
     else:#Senão printa os horários encontrados
         print(f"\nHorários encontrados para cidade {cidade_escolhida}:\n")
@@ -461,43 +458,21 @@ def consultarAssentos():#Função que mostra quais os assentos estão disponíve
     
     if not dentro_de_30_dias(onibus_escolhido['data']):# verificar data dentro de 30 dias
 
-        print("\nErro:Data fora do intervalo de 30 dias.\n")
+        print("\nERRO:Data fora do intervalo de 30 dias.\n")
         return
     
     
     imprime_matriz(onibus_escolhido['assentos'])# Imprime a matriz formatada
 
-    
-    if np.sum(onibus_escolhido['assentos']) < 20:#verifica se existem assentos disponíveis
-
-        opcao = input("\nDeseja reservar algum assento?\n1- Sim\n0- Não\n-> ")
-
-        match(opcao):
-
-            case 1:
-                preencher_onibus(indice_linha, indice_onibus)
-
-            case 0:
-                pass
-                #nada kkkk
-
-            case _:
-                print('\nErro: Digite uma opção válida!\n')
-
-
-    else:#Caso não tenha mais assentos
-        print("Ônibus cheio.")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------
 
-def preencher_onibus(indice_linha, indice_onibus):#Permite o usário escolher um assento
+def preencher_onibus():#Permite o usário escolher um assento
 
-    if (indice_linha is None) or (indice_onibus is None):
+    indice_linha, indice_onibus = escolher_linha_onibus()
 
-        indice_linha, indice_onibus = escolher_linha_onibus()
-
-        if indice_linha is None:#Se ele retornar None é porque algum erro aconteceu na função escolher_linha_onibus
-            return
+    if (indice_linha is None) or (indice_onibus is None):#Se ele retornar None é porque algum erro aconteceu na função escolher_linha_onibus
+        return
         
 
     linha_escolhida = linhas[indice_linha]
@@ -507,14 +482,14 @@ def preencher_onibus(indice_linha, indice_onibus):#Permite o usário escolher um
     
     if not dentro_de_30_dias(onibus_escolhido['data']):#Verifica se a data corresponde para os 30 dias
 
-        print("\nErro: Não é possível reservar data para mais 30 dias.\n")
+        print("\nERRO: Não é possível reservar data para mais 30 dias.\n")
         return
     
 
     
     if onibus_ja_partiu(onibus_escolhido['data'], linha_escolhida['horario']):#Verifica se o ônibus já partiu
 
-        print("\nNão é possível reservar: ônibus já partiu.\n")
+        print("\nERRO: Não é possível reservar: ônibus já partiu.\n")
         return
     
 
@@ -560,7 +535,7 @@ def preencher_onibus(indice_linha, indice_onibus):#Permite o usário escolher um
     linha_escolhida['vendas'].append(venda)
     onibus_escolhido['vendas_onibus'].append(venda)
 
-    print(f"\nCompra realizada! Valor: R$ {linha_escolhida['valor']:.2f} - Assento {numero_assento}\n")
+    print(f"\nCompra realizada com sucesso! Valor: R$ {linha_escolhida['valor']:.2f} - Assento {numero_assento}\n")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -570,99 +545,254 @@ def preencher_onibus(indice_linha, indice_onibus):#Permite o usário escolher um
 """ARQUIVOS .TXT :"""
 #------------------------------------------------------------------------------------------------------------------------------------------------
 
-# Arquivo de reservas (leitura)
+# ------------------------------
+# Relatórios :
+# ------------------------------
 
-def processar_arquivo_reservas(nome_arquivo: str):#Registra no arquivo a cidade, horário, a data e o assento
+
+def _escrever_ou_imprimir(texto, destino, nome_arquivo):#Função para definir se o relatório será printado no terminal ou em um arquivo txt
+
+    if destino == 'tela':
+        print(texto)
+
+    elif destino == 'arquivo':
+
+        if not nome_arquivo:
+            print("Erro: nome do arquivo não fornecido para gravação.")
+            return
+        
+        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            f.write(texto + '\n')
+    else:
+        print("Destino inválido. Use 'tela' ou 'arquivo'.")
+
+#------------------------------------------------------------------------------------------------------------------------------
+
+def relatorio_total_mes(destino, nome_arquivo): #Função que faz o relatorio do mes
     
-    falhas = []#Armazena as falhas
+    hoje = dt.date.today()
+    mes = hoje.month
+    ano = hoje.year
+
+    linhas_text = []
+
+    cabecalho = f"Relatório - Total arrecadado no mês: ({mes}/{ano}):"
+
+    linhas_text.append(cabecalho)
+
+    for indice, linha in enumerate(linhas):
+
+        total = 0
+
+        for i in linha.get('vendas', []):
+
+            if (i['data_venda'].year == ano) and (i['data_venda'].month == mes):
+
+                total += i['preco']
+
+        linhas_text.append(f"Linha {indice}: {linha['origem']} -> {linha['destino']} | Total: R$ {total:.2f}")
+
+    texto = '\n'.join(linhas_text) + '\n'
+
+    _escrever_ou_imprimir(texto, destino, nome_arquivo)#Chama a função de printar no terminal ou no arquivo
+
+    return texto
+
+#-------------------------------------------------------------------------------------------------------------------------------
+
+def relatorio_media_dia(destino, nome_arquivo):
+
+
+    """
+    Gera relatório de ocupação percentual média por linha por dia da semana.
+    Produz uma 'matriz' textual onde cada linha corresponde a uma linha de ônibus,
+    e as 7 colunas correspondem a segunda..domingo (0..6).
+    """
+
+
+    cabecalho = "Relatório - Ocupação percentual média por linha por dia da semana (Seg..Dom):"
+    linhas_text = [cabecalho]
+    
+    for indice, linha in enumerate(linhas):
+
+        # listas por dia
+        dias = [[] for _ in range(7)]
+
+
+        for bus in linha.get('onibus', []):
+
+            weekday = bus['data'].weekday()  # segunda=0 .. domingo=6
+            ocup = (np.sum(bus['assentos']) / 20) * 100
+            dias[weekday].append(ocup)
+
+
+        # calc médias
+        medias = []
+
+        for lst in dias:
+
+            medias.append((sum(lst) / len(lst)) if lst else 0.0)
+
+
+        # montar linha textual formatada (7 colunas)
+        medias_fmt = " | ".join(f"{m:5.1f}%" for m in medias)
+        linhas_text.append(f"Linha {indice}: {linha['origem']} -> {linha['destino']}  ||  {medias_fmt}")
+
+    texto = '\n'.join(linhas_text) + '\n'
+    _escrever_ou_imprimir(texto, destino, nome_arquivo)
+    return texto
+
+#------------------------------------------------------------------------------------------------------------------------------------
+
+def gerarRelatorios():
+
+
+    """
+    Menu de relatórios: pergunta qual relatório e se será exibido na tela ou gravado em arquivo.
+    """
+
+
+    print("\nRelatórios disponíveis:")
+    print("1 - Total arrecadado no mês corrente por linha")
+    print("2 - Ocupação percentual média por linha por dia da semana")
+    
+    try:
+        opcao = int(input("Escolha uma das opções:\n-> "))
+
+    except ValueError:
+        print("ERRO: digite um inteiro.")
+        return
+
+    # escolher onde será printado
+    print("\nDeseja imprimir na tela ou gravar em arquivo?")
+    print("1 - Tela")
+    print("2 - Arquivo (append)")
+    
+    try:
+        opcao_print = int(input("Escolha uma das opções:\n-> "))
+
+    except ValueError:
+        print("ERRO: digite um inteiro.")
+        return
+
+    match(opcao_print):
+
+        case 1:
+            destino = 'tela'
+
+        case 2:
+            destino = 'arquivo'
+
+        case _:
+            print('\nOpção inválida!\n')
+            return
+
+    nome_arquivo = None
+
+    if destino == 'arquivo':
+
+        nome_arquivo = input("Digite o caminho/nome do arquivo para gravar (ex: relatorio.txt):\n-> ").strip()
+
+        # cabeçalho no arquivo
+        with open(nome_arquivo, 'a', encoding='utf-8') as f:
+            f.write(f"--- Relatório gerado em {dt.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} ---\n")
+
+    if (opcao == 1):
+        relatorio_total_mes(destino=destino, nome_arquivo=nome_arquivo)
+    elif (opcao == 2):
+        relatorio_media_dia(destino=destino, nome_arquivo=nome_arquivo)
+    else:
+        print("Opção inválida.")
+
+# ------------------------------
+# Processamento de arquivo de reservas (com gravação de falhas)
+# ------------------------------
+def processar_arquivo_reservas(nome_arquivo: str):
+
+
+    """
+    Lê arquivo com linhas:
+    CIDADE, HORARIO(hh:mm), DATA(dd/mm/aaaa), ASSENTO
+    Tenta aplicar cada reserva. Se falhar, registra a linha no arquivo ARQUIVO_RESERVAS_FALHAS com o motivo.
+    """
+
+
+    falhas = []
 
     try:
         with open(nome_arquivo, 'r', encoding='utf-8') as f:
-            linhas_arquivo = [ln for ln in f if ln]
+            linhas_arquivo = [ln.strip() for ln in f if ln.strip()]
 
     except FileNotFoundError:
-        print("\nERRO: Arquivo não encontrado.\n")
+        print("Arquivo de reservas não encontrado:", nome_arquivo)
         return
-    
 
     for linha_txt in linhas_arquivo:
-        parts = [p for p in linha_txt.split(',')]
 
-        if len(parts) != 4:
-            falhas.append((linha_txt, f"ERRO: Formato inválido"))
+        partes = [p.strip() for p in linha_txt.split(',')]
+
+        if len(partes) != 4:
+
+            falhas.append((linha_txt, "Formato inválido (esperado 4 campos)"))
             continue
-
-        cidade, horario_str, data_str, assento_str = parts
-
-
-        # localizar linha que tenha destino = cidade e horario = horario_str
-        candidatos = [ (li, l) for li, l in enumerate(linhas) if l['destino'].lower() == cidade.lower() and l['horario'] == horario_str ]
         
+        cidade, horario_str, data_str, assento_str = partes
 
+        # encontrar linhas com destino igual à cidade e horário igual
+        candidatos = [(li, l) for li, l in enumerate(linhas)
+                      if l['destino'].lower() == cidade.lower() and l['horario'] == horario_str]
         if not candidatos:
-            falhas.append((linha_txt, f"ERRO: Linha inexistente (cidade/horário não correspondem)"))
+            falhas.append((linha_txt, "Linha inexistente (cidade/horário não correspondem)"))
             continue
 
-
-        # pegar data
+        # verifica data
         try:
             data_viagem = verificar_data(data_str)
-
         except ValueError:
-            falhas.append((linha_txt, f"ERRO: Data inválida"))
+            falhas.append((linha_txt, "Data inválida"))
             continue
 
+        # pega primeira linha candidata (poderia haver múltiplas; ajuste se quiser lógica diferente)
+        li, l = candidatos[0]
 
-        # encontrar ônibus com essa data
-        li, l = candidatos[0]  # se várias linhas iguais, pega a primeira
+        # procura ônibus com essa data
         idx_onibus = None
-
-        for bi, b in enumerate(l['onibus']):
+        for bi, b in enumerate(l.get('onibus', [])):
             if b['data'] == data_viagem:
                 idx_onibus = bi
                 break
-
-
         if idx_onibus is None:
-            falhas.append((linha_txt, "ERRO: Ônibus nessa data não encontrado"))
+            falhas.append((linha_txt, "Ônibus nessa data não encontrado"))
             continue
 
-
-
-        # validar assento numérico
+        # valida assento
         try:
             num_assento = int(assento_str)
         except ValueError:
-            falhas.append((linha_txt, "ERRO: Assento inválido"))
+            falhas.append((linha_txt, "Assento inválido (não é inteiro)"))
             continue
-
-
-        # validar data <=30 dias e não partiu e assento livre
-        b = l['onibus'][idx_onibus]
-
-        if not dentro_de_30_dias(b['data']):
-            falhas.append((linha_txt, "ERRO: Data fora do intervalo de 30 dias"))
-            continue
-
-
-        if onibus_ja_partiu(b['data'], l['horario']):
-            falhas.append((linha_txt, "ERRO: Ônibus já partiu"))
-            continue
-
-
         try:
             i, j = assento_numero_para_indices(num_assento)
         except ValueError:
-            falhas.append((linha_txt, "ERRO: Assento fora de 1-20"))
+            falhas.append((linha_txt, "Assento fora do intervalo 1-20"))
             continue
 
+        b = l['onibus'][idx_onibus]
 
+        # valida intervalo 30 dias
+        if not dentro_de_30_dias(b['data']):
+            falhas.append((linha_txt, "Data fora do intervalo de 30 dias"))
+            continue
+        # valida se já partiu
+        if onibus_ja_partiu(b['data'], l['horario']):
+            falhas.append((linha_txt, "Ônibus já partiu"))
+            continue
+        # valida assento ocupado
         if b['assentos'][i, j] == 1:
-            falhas.append((linha_txt, "ERRO: Assento ocupado"))
+            falhas.append((linha_txt, "Assento ocupado"))
             continue
 
-
-        # tudo ok: reservar
+        # tudo OK -> reservar
         b['assentos'][i, j] = 1
         venda = {
             "data_venda": dt.datetime.now(),
@@ -672,127 +802,20 @@ def processar_arquivo_reservas(nome_arquivo: str):#Registra no arquivo a cidade,
             "linha_origem": l['origem'],
             "linha_destino": l['destino']
         }
-        l['vendas'].append(venda)
-        b['vendas_onibus'].append(venda)
-    # gravar falhas em arquivo
-    
-    
+        l.setdefault('vendas', []).append(venda)
+        b.setdefault('vendas_onibus', []).append(venda)
+
+    # gravar falhas em arquivo padrão
     if falhas:
         with open(ARQUIVO_RESERVAS_FALHAS, 'a', encoding='utf-8') as f:
+            f.write(f"--- Processamento em {dt.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} - Arquivo: {nome_arquivo} ---\n")
             for txt, motivo in falhas:
                 f.write(f"{txt} -> Motivo: {motivo}\n")
-        print(f"{len(falhas)} reserva(s) não puderam ser realizadas. Erros salvos em {ARQUIVO_RESERVAS_FALHAS}")
+            f.write("\n")
+        print(f"{len(falhas)} reserva(s) NÃO puderam ser realizadas. Detalhes gravados em {ARQUIVO_RESERVAS_FALHAS}")
     else:
         print("Todas as reservas do arquivo foram processadas com sucesso.")
 
-#------------------------------------------------------------------------------------------------------------------------------------------------
-
-"""RELATÓRIOS:"""
-
-#----------------------------------------------------------------------------------------------------------------------------------
-
-#Relatório do total arrecadado no mes
-
-'''
-Gera e exibe o relatório com o total arrecadado em vendas no mês e no ano atuais para cada linha cadastrada.
-A função percorre todas as linhas e soma o valor de todas as vendas cuja data corresponde ao mês e ano corrente, exibindo o total
-arrecadado por linha no terminal.
-'''
-
-def relatorio_total_mes():
-
-    hoje = dt.date.today()
-    mes = hoje.month
-    ano = hoje.year
-
-    print(f"\nTotal arrecadado no mês corrente ({mes}/{ano}):\n")
-
-    for idx, l in enumerate(linhas):
-
-        total = 0
-
-        for v in l['vendas']:
-
-            if v['data_venda'].year == ano and v['data_venda'].month == mes:
-
-                total += v['preco']
-
-        print(f"Linha {idx}: {l['origem']} -> {l['destino']} | Total: R$ {total:.2f}")
-    
-
-#--------------------------------------------------------------------------------------------------------------------
-
-#Relatório da ocupação percentual média de cada linha em cada dia da semana
-
-"""
-Para cada linha, calcula ocupação percentual média por dia da semana (0=segunda,...6=domingo).
-Ocupação = (assentos ocupados)/(20) *100
-Calculamos média considerando todos os ônibus existentes (datas) daquela linha (incluindo passadas).
-"""
-
-def relatorio_media_dia():
-
-    print("\nOcupação percentual média de uma linha por dia da semana (0=segunda ... 6=domingo):\n")
-    
-    for indice, linha in enumerate(linhas):
-        # criar vetor de listas para cada dia da semana
-        dias = [[] for j in range(7)]
-
-        for bus in linha['onibus']:
-            dia = bus['data'].dia()  # 0..6 (segunda..domingo)
-            ocupado = (np.sum(bus['assentos']) / 20) * 100
-            dias[dia].append(ocupado)
-
-
-        # calcular médias
-        medias = []
-
-        for lista in dias:
-            if lista:
-                medias.append(sum(lista)/len(lista))
-            else:
-                medias.append(0.0)
-
-
-        # imprimir
-        medias_total = ", ".join([f"{m:.1f}%" for m in medias])
-
-        print(f"Linha {indice}: {linha['origem']} -> {linha['destino']} | Médias por dia: [{medias_total}]")
-
-
-    
-
-#--------------------------------------------------------------------------------------------------------------------
-
-def gerarRelatorios():
-
-    '''
-    Exibe o menu de relatórios disponíveis e solicita ao usuário que escolha qual deles deseja gerar:
-    Relatório do total arrecadado no mês corrente por linha, 
-    Relatório da ocupação percentual média por linha ao longo dos dias da semana.
-    '''
-
-    print("\nRelatórios disponíveis:")
-    print("1 - Total arrecadado no mês corrente por linha")
-    print("2 - Ocupação percentual média por linha por dia da semana")
-
-
-    try:
-        opc = int(input("\nEscolha uma das opções acima:\n-> "))
-
-    except ValueError:
-        print("\nERRO: digite um inteiro.\n")
-        return
-    
-
-    if opc == 1:
-        relatorio_total_mes()
-
-    elif opc == 2:
-        relatorio_media_dia()
-
-    else:
-        print("\nERRO: Opção inválida.\n")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -812,10 +835,9 @@ while sair == 0:
         print("2 - Consultar horários disponíveis para uma cidade;")
         print("3 - Consultar os assentos disponíveis no ônibus;")
         print("4 - Marcar (reservar) um assento de um ônibus;")
-        print("5 - Criar outro ônibus (adicionar data) para uma linha já existente;")
+        print("5 - Criar outro ônibus para uma linha já existente;")
         print("6 - Ler reservas de arquivo (formato especificado);")
         print("7 - Gerar relatórios;")
-        #print("8 - Listar todas as linhas e ônibus cadastrados;") TESTE
         print("0 - Sair.")
         opcao = int(input("\nOpção:\n-> "))
 
@@ -869,12 +891,6 @@ while sair == 0:
             
             case 7:
                 gerarRelatorios()
-            
-            
-            #TESTE
-            #case 8:
-            #    listar_linhas_com_indices()
-
 
             case 0:#Para finalizar o programa
                 print("\nFinalizando o programa...\n")
