@@ -9,6 +9,7 @@
 # 1) Sobre o Projeto:
   O projeto aqui apresentado é uma simulação de um sistema de uma empresa de um rodoviária de ônibus, onde o usuário pode:
   * Definir a linha de percusso do ônibus, ou seja, sua origem e destino;
+  * Criar 30 ônibus para cada linha, um ônibus para cada 30 dias do mê;
   * Seu horário de partida;
   * O preço da passagem por assento;
   * O assento que vai ocupar, de um a vinte sendo os lugares com janelas os números impares;
@@ -20,7 +21,7 @@ O projeto inicializa com o usuário escolhendo a opção de criar uma linha de �
 
 # 3) Opções Oferecidas:
 * 1 - Cadastrar, editar ou excluir linhas;
-Permite criar novas linhas de ônibus informando cidade de origem, cidade de destino, horário da viagem e valor da passagem após cadastrada, além de também ser possível editar esses dados.
+Permite criar novas linhas de ônibus informando cidade de origem, cidade de destino, horário da viagem e valor da passagem após cadastrada, editar os dados das linhas cadastradas e gerar 30 ônibus para cada dia do mês assim que se cria uma linha.
 * 2 - Consultar horários disponíveis para uma cidade
 O usuário informa uma cidade, e o sistema lista todas as linhas que partem ou chegam nela, exibindo horários e preços.
 * 3 - Consultar os assentos disponíveis no ônibus:
