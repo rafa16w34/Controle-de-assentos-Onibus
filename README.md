@@ -3,16 +3,16 @@
 # Autores: 
 * Rafael Alves Faria
 * Gabriel Alves Faria
-# Orientador: 
+# Professor orientador: 
 * Guido
 
 # 1) Sobre o Projeto:
-  O projeto aqui apresentado é uma simulação de um sistema de uma empresa de um todoviária de ônibus, onde o usuário pode:
+  O projeto aqui apresentado é uma simulação de um sistema de uma empresa de um rodoviária de ônibus, onde o usuário pode:
   * Definir a linha de percusso do ônibus, ou seja, sua origem e destino;
   * Seu horário de partida;
   * O preço da passagem por assento;
   * O assento que vai ocupar, de um a vinte sendo os lugares com janelas os números impares;
-  * Gerar dos relatórios na tela do prompt ou em arquivo de texto, contendo o total arrecadado com venda de passagens no mês corrente para cada linha e a ocupação percentual média de cada linha em cada dia da semana, em forma de matriz;
+  * Gerar relatórios na tela do prompt ou em arquivo de texto, contendo o total arrecadado com venda de passagens no mês corrente para cada linha e a ocupação percentual média de cada linha em cada dia da semana, em forma de matriz;
   * Receber e gravar em um arquivo texto todas as reservas que não puderam ser realizadas, juntamente com o motivo (ex.: ônibus cheio, ônibus já partiu, assento ocupado).
 
 # 2) Como Iniciar/Terminar o Projeto:
@@ -37,7 +37,6 @@ salva em outro arquivo os erros e motivos (por exemplo: assento ocupado, linha i
 total arrecadado por linha;
 ocupação média (%) dos ônibus;
 quantidade de assentos ocupados por viagem.
-* 8 - Listar todas as linhas e ônibus cadastrados: Mostra um resumo com todas as linhas existentes e suas datas de operação, cada uma com seus respectivos ônibus cadastrados.
 * 0 - Sair: Encerra o programa.
 
 # 4) Principais Telas:
