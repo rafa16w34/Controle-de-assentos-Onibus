@@ -398,7 +398,7 @@ def escolher_linha_onibus():#Para o usário escolher uma linha e um ônibus da m
 
     print("\nÔnibus (índice) e datas disponíveis para essa linha:")#Mostra os ônibus e seus índices
 
-    for i, o in enumerate(l['onibus']):
+    for i, o in enumerate(linha_escolhida['onibus']):
         print(f"{i} - Data: {o['data'].strftime('%d/%m/%Y')} - Assentos ocupados: {np.sum(o['assentos'])}/20")
     
     
@@ -410,7 +410,7 @@ def escolher_linha_onibus():#Para o usário escolher uma linha e um ônibus da m
         return None, None
     
 
-    if not (0 <= indice_onibus < len(l['onibus'])):#Se o índice não existir
+    if not (0 <= indice_onibus < len(linha_escolhida['onibus'])):#Se o índice não existir
         print("\nERRO: Índice de ônibus inválido.\n")
         return None, None
     
@@ -653,8 +653,9 @@ def gerarRelatorios():
 
 
     print("\nRelatórios disponíveis:")
-    print("1 - Total arrecadado no mês corrente por linha")
-    print("2 - Ocupação percentual média por linha por dia da semana")
+    print("1 - Total arrecadado no mês corrente por linha;")
+    print("2 - Ocupação percentual média por linha por dia da semana;")
+    print('3 - Arquivo com as reservas;')
     
     try:
         opcao = int(input("Escolha uma das opções:\n-> "))
@@ -663,51 +664,99 @@ def gerarRelatorios():
         print("ERRO: digite um inteiro.")
         return
 
-    # escolher onde será printado
-    print("\nDeseja imprimir na tela ou gravar em arquivo?")
-    print("1 - Tela")
-    print("2 - Arquivo (append)")
-    
-    try:
-        opcao_print = int(input("Escolha uma das opções:\n-> "))
+    if (opcao != 3):
 
-    except ValueError:
-        print("ERRO: digite um inteiro.")
-        return
+        # escolher onde será printado
+        print("\nDeseja imprimir na tela ou gravar em arquivo?")
+        print("1 - Tela")
+        print("2 - Arquivo (append)")
+        
+        try:
+            opcao_print = int(input("Escolha uma das opções:\n-> "))
 
-    match(opcao_print):
-
-        case 1:
-            destino = 'tela'
-
-        case 2:
-            destino = 'arquivo'
-
-        case _:
-            print('\nOpção inválida!\n')
+        except ValueError:
+            print("ERRO: digite um inteiro.")
             return
 
-    nome_arquivo = None
 
-    if destino == 'arquivo':
+        match(opcao_print):
 
-        nome_arquivo = input("Digite o caminho/nome do arquivo para gravar (ex: relatorio.txt):\n-> ").strip()
+            case 1:
+                destino = 'tela'
 
-        # cabeçalho no arquivo
-        with open(nome_arquivo, 'a', encoding='utf-8') as f:
-            f.write(f"--- Relatório gerado em {dt.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} ---\n")
+            case 2:
+                destino = 'arquivo'
 
-    if (opcao == 1):
-        relatorio_total_mes(destino=destino, nome_arquivo=nome_arquivo)
-    elif (opcao == 2):
-        relatorio_media_dia(destino=destino, nome_arquivo=nome_arquivo)
-    else:
-        print("Opção inválida.")
+            case _:
+                print('\nOpção inválida!\n')
+                return
+
+        nome_arquivo = None
+
+        if destino == 'arquivo':
+
+            nome_arquivo = input("Digite o nome do arquivo para gravar (ex: relatorio.txt):\n-> ").strip()
+
+            # cabeçalho no arquivo
+            with open(nome_arquivo, 'a', encoding='utf-8') as f:
+                f.write(f"--- Relatório gerado em {dt.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} ---\n")
+
+
+    match(opcao):
+        case 1:
+            relatorio_total_mes(destino=destino, nome_arquivo=nome_arquivo)
+        case 2:
+            relatorio_media_dia(destino=destino, nome_arquivo=nome_arquivo)
+        
+        case 3:
+            gerar_arquivo_reservas("reservas_geradas.txt")
+        case _:
+            print("Opção inválida.")
 
 # ------------------------------
 # Processamento de arquivo de reservas (com gravação de falhas)
 # ------------------------------
-def processar_arquivo_reservas(nome_arquivo: str):
+
+def gerar_arquivo_reservas(nome_arquivo):#Cria um arquivo txt com as reservas, para que possa ser lido depois
+    """
+    Gera um arquivo contendo TODAS AS RESERVAS já realizadas no sistema,
+    no formato aceito por processar_arquivo_reservas():
+
+        CIDADE, HORARIO, DATA, ASSENTO
+    """
+
+    linhas_txt = []
+
+    for linha in linhas:
+
+        destino = linha["destino"]
+        horario = linha["horario"]
+
+        # percorre todos os ônibus da linha
+        for bus in linha["onibus"]:
+
+            # percorre todas as vendas deste ônibus
+            for venda in bus.get("vendas_onibus", []):
+                
+                data_str = venda["data_viagem"].strftime("%d/%m/%Y")
+                assento = venda["assento"]
+
+                # monta a linha no formato correto
+                linha_formatada = f"{destino}, {horario}, {data_str}, {assento}"
+
+                linhas_txt.append(linha_formatada)
+
+    # grava no arquivo
+    with open(nome_arquivo, "w", encoding="utf-8") as f:
+        for linha_info in linhas_txt:
+            f.write(linha_info + "\n")
+
+    print(f"\nArquivo '{nome_arquivo}' criado com sucesso com {len(linhas_txt)} reserva(s)!\n")
+
+
+
+#--------------------------------------------------------------------------------------------------------------------
+def processar_arquivo_reservas():#Ler arquivo das reservas txt
 
 
     """
@@ -720,11 +769,12 @@ def processar_arquivo_reservas(nome_arquivo: str):
     falhas = []
 
     try:
-        with open(nome_arquivo, 'r', encoding='utf-8') as f:
+        with open("reservas_geradas.txt", 'r', encoding='utf-8') as f:
             linhas_arquivo = [ln.strip() for ln in f if ln.strip()]
 
     except FileNotFoundError:
-        print("Arquivo de reservas não encontrado:", nome_arquivo)
+        
+        gerar_arquivo_reservas("reservas_geradas.txt")
         return
 
     for linha_txt in linhas_arquivo:
@@ -740,7 +790,9 @@ def processar_arquivo_reservas(nome_arquivo: str):
 
         # encontrar linhas com destino igual à cidade e horário igual
         candidatos = [(li, l) for li, l in enumerate(linhas)
+                      
                       if l['destino'].lower() == cidade.lower() and l['horario'] == horario_str]
+        
         if not candidatos:
             falhas.append((linha_txt, "Linha inexistente (cidade/horário não correspondem)"))
             continue
@@ -748,6 +800,7 @@ def processar_arquivo_reservas(nome_arquivo: str):
         # verifica data
         try:
             data_viagem = verificar_data(data_str)
+
         except ValueError:
             falhas.append((linha_txt, "Data inválida"))
             continue
@@ -783,10 +836,14 @@ def processar_arquivo_reservas(nome_arquivo: str):
         if not dentro_de_30_dias(b['data']):
             falhas.append((linha_txt, "Data fora do intervalo de 30 dias"))
             continue
+
+
         # valida se já partiu
         if onibus_ja_partiu(b['data'], l['horario']):
             falhas.append((linha_txt, "Ônibus já partiu"))
             continue
+
+
         # valida assento ocupado
         if b['assentos'][i, j] == 1:
             falhas.append((linha_txt, "Assento ocupado"))
@@ -808,7 +865,7 @@ def processar_arquivo_reservas(nome_arquivo: str):
     # gravar falhas em arquivo padrão
     if falhas:
         with open(ARQUIVO_RESERVAS_FALHAS, 'a', encoding='utf-8') as f:
-            f.write(f"--- Processamento em {dt.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} - Arquivo: {nome_arquivo} ---\n")
+            f.write(f"--- Processamento em {dt.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} - Arquivo: 'reservas_geradas.txt' ---\n")
             for txt, motivo in falhas:
                 f.write(f"{txt} -> Motivo: {motivo}\n")
             f.write("\n")
@@ -833,7 +890,7 @@ while sair == 0:
         print("3 - Consultar os assentos disponíveis no ônibus;")
         print("4 - Marcar (reservar) um assento de um ônibus;")
         print("5 - Criar outro ônibus para uma linha já existente;")
-        print("6 - Ler reservas de arquivo (formato especificado);")
+        print("6 - Ler ou gerar arquivos de reservas;")
         print("7 - Gerar relatórios;")
         print("0 - Sair.")
         opcao = int(input("\nOpção:\n-> "))
@@ -882,9 +939,8 @@ while sair == 0:
             case 5:#Cria um ônibus para uma linha já existente
                 criar_onibus_para_linha()
             
-            case 6:
-                nome_arquivo = input("\nDigite o caminho do arquivo de reservas:\n-> ")
-                processar_arquivo_reservas(nome_arquivo)
+            case 6:#Le um arquivo txt com as reservas ou cria um se ele não existir
+                processar_arquivo_reservas()
             
             case 7:
                 gerarRelatorios()

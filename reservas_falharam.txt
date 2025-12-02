@@ -1,0 +1,8 @@
+--- Processamento em 01/12/2025 21:45:53 - Arquivo: 'reservas_geradas.txt' ---
+bh, 16:00, 12/12/2025, 1 -> Motivo: Linha inexistente (cidade/horário não correspondem)
+bh, 16:00, 12/12/2025, 19 -> Motivo: Linha inexistente (cidade/horário não correspondem)
+
+--- Processamento em 01/12/2025 21:47:26 - Arquivo: 'reservas_geradas.txt' ---
+bh, 16:00, 12/12/2025, 1 -> Motivo: Ônibus nessa data não encontrado
+bh, 16:00, 12/12/2025, 19 -> Motivo: Ônibus nessa data não encontrado
+
