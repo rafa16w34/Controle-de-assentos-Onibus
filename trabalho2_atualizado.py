@@ -208,6 +208,8 @@ def cadastroLinhas():#Função que cria as linhas
 
     linhas.append(linha)#adiciona esse dicionário a lista de dicionário de linhas
 
+    criar_30_onibus(linha)
+
     print("\nLinha cadastrada com sucesso!\n")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------
@@ -314,6 +316,22 @@ def editar_linha():
         
         case _:
             print('\nERRO: Opção inválida!\n')
+
+#------------------------------------------------------------------------------------------------------------------------------------------------
+def criar_30_onibus(linha):#Função que adiciona os 30 ônibus iniciais
+    
+
+    data_viagem = dt.date.today()  # data inicial
+
+    for i in range(30):
+
+        nova_data = data_viagem + dt.timedelta(days=i)  # soma i dias
+
+        onibus = {"data": nova_data, "assentos": criar_matriz_assentos(), "vendas_onibus": []}#Dicionário do ônibus
+
+        linha['onibus'].append(onibus)#Adiciona o novo ônibus no dicionário da linha
+    
+    print(f"\nOs 30 ônibus foram criados com sucesso para os próximos 30 dias\n")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------
 
