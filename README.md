@@ -25,7 +25,7 @@ Permite criar novas linhas de ônibus informando cidade de origem, cidade de des
 * 2 - Consultar horários disponíveis para uma cidade
 O usuário informa uma cidade, e o sistema lista todas as linhas que partem ou chegam nela, exibindo horários e preços.
 * 3 - Consultar os assentos disponíveis no ônibus:
-Exibe o mapa de assentos do ônibus (5 x 4), marcando: "L" para assento livre e "X" para ocupado. O usuário escolhe a linha e o ônibus desejado.
+Exibe o mapa de assentos do ônibus (5 x 4), marcando: "V" para assento vazio e "O" para ocupado. O usuário escolhe a linha e o ônibus desejado.
 * 4 - Marcar (reservar) um assento de um ônibus:
 Permite reservar um assento informando a linha, a data / horário e o número do assento (1 a 20). O sistema verifica disponibilidade e registra a reserva.
 * 5 - Criar outro ônibus (adicionar data) para uma linha já existente. Caso uma linha precise operar em mais de uma data, o sistema permite criar um novo ônibus associando: data da viagem, nova matriz de assentos vazia e armazenamento de reservas futuras
